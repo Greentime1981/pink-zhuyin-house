@@ -4,7 +4,7 @@
 import asyncio, hashlib, json, os, sys
 import edge_tts
 
-VOICE, RATE, PITCH = 'zh-TW-HsiaoYuNeural', '-12%', '+12Hz'
+VOICE, RATE, PITCH = 'zh-TW-HsiaoChenNeural', '+0%', '+0Hz'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'audio')
 os.makedirs(OUT, exist_ok=True)

@@ -5,7 +5,7 @@
 ## 檔案
 - `index.html`：整個 App（資料、題目產生器、畫面、音效都在這一個檔案）
 - `manifest.json`、`sw.js`、`icons/`：離線使用、加到主畫面
-- `audio/`：AI 語音音檔（微軟「曉雨」台灣女聲，用 edge-tts 產生）與對照表 map.js
+- `audio/`：AI 語音音檔（微軟「曉臻」台灣女聲（原聲不調整），用 edge-tts 產生）與對照表 map.js
 - `tools/make_icons.py`：重新畫 App 圖示
 
 ## 要改內容時
