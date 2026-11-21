@@ -16,6 +16,7 @@
   `node tools/export_phrases.js` → `python tools/make_voice.py`（需要 `pip install edge-tts`；聲音設定在 make_voice.py 最上面）
 - 會連著唸的句子（例如「找找看，玻，在哪裡？」）會整句一次錄，語調比較自然；還沒錄到的整句，App 會自動退回一段一段接著播。
 - 注音念得不準時：`python tools/voice_test.py`，再用本機試玩的方法打開 http://localhost:8123/tools/voice_test/ ，用耳朵挑每個注音最好的念法，按「複製結果」，然後照結果改 `SYM_RAW` 第二欄。
+- 家長專區 →「🎙️ 家長錄音」：可以用手機自己錄 37 個注音，錄好的會取代 AI 語音（存在該裝置的 IndexedDB，不上傳）。
 - **每次發布前把 `sw.js` 的 `CACHE` 版本號 +1**，不然已安裝的手機會一直用舊版。
 
 ## 本機試玩

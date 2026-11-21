@@ -385,6 +385,10 @@ const VBUF = {};
 let vTok = 0, vSrc = null, voiceGain = null;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function clip(text){
+  if (REC[text] && AC) {
+    if (RBUF[text]) return RBUF[text];
+    try { const raw = await new Promise((ok, no) => AC.decodeAudioData(REC[text].slice(0), ok, no)); return RBUF[text] = trimSilence(raw, 0.02); } catch(e) {}
+  }
   const M = window.VOICE_MAP || {}, f = M[text] || M[OLD_SAY[text]];
   if (!f || !AC) return null;
   if (VBUF[f]) return VBUF[f];
@@ -396,9 +400,9 @@ async function clip(text){
   } catch(e) { return null; }
 }
 // AI 語音前後約有 0.2 秒和 1 秒的空白，剪掉才不會一段一段拖很久
-function trimSilence(b){
+function trimSilence(b, th = 0.008){
   try {
-    const d = b.getChannelData(0), sr = b.sampleRate, th = 0.008;
+    const d = b.getChannelData(0), sr = b.sampleRate;
     let a = 0, z = d.length - 1;
     while (a < d.length && Math.abs(d[a]) < th) a++;
     while (z > a && Math.abs(d[z]) < th) z--;
@@ -433,7 +437,7 @@ async function speak(parts){
   if (!S.voice || !parts.length) { await wait(300); return; }
   if (AC && AC.state === 'suspended') { try { AC.resume(); } catch(e) {} }
   // 優先播「整句一次錄好」的版本，語調比較像真人；還沒錄到才退回一段一段接
-  const whole = parts.length > 1 ? await clip(parts.join('，')) : null;
+  const whole = parts.length > 1 && !parts.some(x => REC[x]) ? await clip(parts.join('，')) : null;
   const bufs = whole ? [whole] : await Promise.all(parts.map(clip));
   if (tok !== vTok) return;
   if (bufs.every(Boolean)) {
@@ -507,7 +511,7 @@ function bgmTick(){
 }
 function bgmUpdate(){
   if (!AC) return;
-  const want = S.bgm && !document.hidden && !resting;
+  const want = S.bgm && !document.hidden && !resting && screen !== 'rec';
   if (want && !bgmTimer) { bgmNext = AC.currentTime + 0.1; bgmTimer = setInterval(bgmTick, 100); bgmTick(); }
   if (!want && bgmTimer) { clearInterval(bgmTimer); bgmTimer = null; }
 }
@@ -836,7 +840,9 @@ function parentPage(){
     <div class="panel"><h2>🔊 聲音</h2>
       ${[['sfx', '答對／答錯音效'], ['bgm', '輕柔背景音樂'], ['voice', '語音唸題目（建議開著）']].map(([k, n]) => `<div class="sw"><span>${n}</span><button class="tg ${S[k] ? 'on' : ''}" onclick="ptoggle('${k}')"></button></div>`).join('')}
       <p><small>${window.VOICE_MAP ? '使用預先做好的 AI 真人語音（不需要網路）。' : VOICE ? '目前使用的語音：' + VOICE.name :'⚠️ 這台裝置找不到中文語音。iPhone／iPad：設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文（台灣）；Android：設定 → 文字轉語音 → 下載中文語音。'}</small></p>
-      <p style="margin-top:.6rem"><b>逐一試聽注音念法</b><br><small>點一個符號聽聽看，念得怪怪的可以記下來告訴我。</small></p>
+      <div class="row" style="justify-content:flex-start;margin-top:.6rem"><button class="btn small" onclick="recPage()">🎙️ 家長錄音（換成真人聲音）</button></div>
+      <p><small>已經錄了 ${Object.keys(REC).length} 段。錄好的會取代 AI 語音，只存在這台裝置。</small></p>
+      <p style="margin-top:.6rem"><b>逐一試聽注音念法</b><br><small>點一個符號聽聽看，念得不清楚的就用上面的「家長錄音」自己錄。</small></p>
       <div class="sgrid">${syms.map(s => `<button class="sg l2" onclick="audioInit();speak(symLine(SYM['${s}']))">${s}</button>`).join('')}</div>
     </div>
     <div class="panel"><h2>🔓 關卡</h2>
@@ -855,10 +861,83 @@ function resetAll(){
   S = Object.assign(defaults(), keep); save(); home();
 }
 
+// ---------- 家長錄音（存在這台裝置的 IndexedDB，不上傳）----------
+const REC = {}, RBUF = {};
+let recDB = null, recNow = null;
+function recOpen(){
+  return new Promise(res => {
+    if (recDB || !window.indexedDB) return res(recDB);
+    try {
+      const r = indexedDB.open('pinkZhuyinRec', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('rec');
+      r.onsuccess = () => { recDB = r.result; res(recDB); };
+      r.onerror = () => res(null);
+    } catch(e) { res(null); }
+  });
+}
+async function recLoad(){
+  const db = await recOpen(); if (!db) return;
+  const st = db.transaction('rec').objectStore('rec'), keys = await new Promise(r => { const q = st.getAllKeys(); q.onsuccess = () => r(q.result); q.onerror = () => r([]); });
+  for (const k of keys) { const v = await new Promise(r => { const q = db.transaction('rec').objectStore('rec').get(k); q.onsuccess = () => r(q.result); q.onerror = () => r(null); }); if (v) REC[k] = v; }
+}
+function recPut(k, v){
+  return recOpen().then(db => db && new Promise(r => { const t = db.transaction('rec', 'readwrite'); v ? t.objectStore('rec').put(v, k) : t.objectStore('rec').delete(k); t.oncomplete = r; t.onerror = r; }));
+}
+const recItems = () => Object.values(SYM).flatMap(d => [
+  {k:d.say, show:`「${d.s}」`, hint:'只念聲音'},
+  {k:symLine(d), show:`「${d.s}，${d.word}的${d.s}」`, hint:'整句'}
+]);
+function recPage(){
+  screen = 'rec'; stopVoice(); bgmUpdate();
+  const items = recItems(), n = items.filter(x => REC[x.k]).length;
+  view(`<div class="top"><button class="ib" onclick="recBack()">◀</button><span class="sp"></span><b style="font-size:1.2rem">🎙️ 家長錄音</b><span class="sp"></span></div>
+  <div class="parent">
+    <div class="panel"><p><b>點 🎙️ 開始錄，念完再點一次 ⏹ 停止</b>，會自動播給你聽。不滿意就再錄一次。</p>
+      <p><small>・像老師一樣念，聲音拉長一點、清楚一點，例如「ㄅ～」。<br>・在安靜的地方錄，嘴巴離手機一個手掌遠。<br>・不用全部錄完，沒錄的會繼續用 AI 語音。第一次會問麥克風權限，請按「允許」。</small></p>
+      <p>已錄 <b>${n} / ${items.length}</b>　<button class="btn ghost small" onclick="recClear()">全部刪除</button></p></div>
+    ${Object.values(SYM).map(d => `<div class="panel" style="padding:.7rem 1rem"><div style="display:flex;align-items:center;gap:.8rem">
+      <span style="font-size:2.6rem;font-weight:800;color:var(--deep);min-width:3rem;text-align:center">${d.s}</span>
+      <div style="flex:1">${[[d.say, `「${d.s}」`], [symLine(d), `「${d.s}，${d.word}的${d.s}」`]].map(([k, show]) => `
+        <div class="sw" style="flex-wrap:wrap"><span style="font-weight:700">${show} ${REC[k] ? '✅' : ''}</span><span style="display:flex;gap:.35rem">
+          <button class="ib" data-rk="${encodeURIComponent(k)}" onclick="recTap(this)" aria-label="錄音">🎙️</button>
+          <button class="ib" onclick="audioInit();speak(decodeURIComponent('${encodeURIComponent(k)}'))" aria-label="播放">▶</button>
+          ${REC[k] ? `<button class="ib" onclick="recDel(decodeURIComponent('${encodeURIComponent(k)}'))" aria-label="刪除">🗑</button>` : ''}</span></div>`).join('')}
+      </div></div></div>`).join('')}
+  </div>`);
+}
+function recBack(){ recStop(); screen = 'parent'; bgmUpdate(); parentPage(); }
+async function recTap(btn){
+  audioInit();
+  const k = decodeURIComponent(btn.dataset.rk);
+  if (recNow) { const same = recNow.k === k; recStop(); if (same) return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder) { alert('這個瀏覽器不能錄音。iPhone 請用 Safari 打開，Android 請用 Chrome。'); return; }
+  stopVoice();
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true}}); }
+  catch(e) { alert('沒有麥克風權限。請到手機的「設定」打開這個 App／瀏覽器的麥克風權限，再試一次。'); return; }
+  const mr = new MediaRecorder(stream), chunks = [];
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    const blob = new Blob(chunks, {type: mr.mimeType || 'audio/mp4'});
+    if (blob.size < 800) { recPage(); return; }
+    const ab = await blob.arrayBuffer();
+    try { await new Promise((ok, no) => AC.decodeAudioData(ab.slice(0), ok, no)); } catch(e) { alert('錄音失敗，請再錄一次。'); recPage(); return; }
+    REC[k] = ab; delete RBUF[k]; await recPut(k, ab);
+    recPage(); speak(k);
+  };
+  recNow = {k, mr, timer:setTimeout(recStop, 5000)};
+  btn.textContent = '⏹'; btn.style.background = '#ff8fb3';
+  mr.start();
+}
+function recStop(){ if (!recNow) return; clearTimeout(recNow.timer); const mr = recNow.mr; recNow = null; try { if (mr.state !== 'inactive') mr.stop(); } catch(e) {} }
+async function recDel(k){ if (!confirm('刪除這段錄音？')) return; delete REC[k]; delete RBUF[k]; await recPut(k, null); recPage(); }
+async function recClear(){ if (!confirm('確定刪除全部錄音嗎？會改回 AI 語音。')) return; for (const k of Object.keys(REC)) { delete REC[k]; delete RBUF[k]; await recPut(k, null); } recPage(); }
+
 // ---------- 每日時間提醒 ----------
 function tick(){
   if (S.day.d !== today()) { S.day = {d:today(), sec:0, bonus:0}; }
-  if (screen === 'splash' || resting || document.hidden || screen === 'parent' || screen === 'gate') return;
+  if (screen === 'splash' || resting || document.hidden || screen === 'parent' || screen === 'gate' || screen === 'rec') return;
   S.day.sec++;
   if (S.day.sec % 15 === 0) save();
   if (S.limit && S.day.sec >= S.limit * 60 + S.day.bonus) { resting = true; save(); restScreen(); }
@@ -908,7 +987,7 @@ function iosGuide(){
 
 // ---------- 啟動 ----------
 document.addEventListener('visibilitychange', () => { if (!AC) return; if (document.hidden) { stopVoice(); AC.suspend(); } else AC.resume(); bgmUpdate(); });
-load(); initVoice();
+load(); initVoice(); recLoad();
 if (S.limit && S.day.sec >= S.limit * 60 + S.day.bonus) { resting = true; restScreen(); } else splash();
 setInterval(tick, 1000);
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
