@@ -1,5 +1,5 @@
 // 粉紅注音小屋 service worker：每次發布請把版本號 +1
-const CACHE = 'pink-zhuyin-v3';
+const CACHE = 'pink-zhuyin-v4';
 importScripts('./audio/map.js');  // 語音音檔清單
 const ASSETS = ['./', './manifest.json', './audio/map.js', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
   ...[...new Set(Object.values(self.VOICE_MAP || {}))].map(f => './audio/' + f)];

@@ -132,6 +132,7 @@ h2{margin:.2rem 0 .6rem;font-size:1.3rem}
 .opt .lb{font-size:1.05rem;font-weight:800;margin-top:.15rem}
 .opt svg{width:4.2rem;height:3rem}
 .opt.ok{background:#e6fbef;box-shadow:0 .4rem 0 var(--green);animation:pop .4s}
+.opt.hint{outline:.25rem solid var(--yellow);animation:breathe 1s infinite}
 .opt.no{opacity:.35;filter:grayscale(1);animation:shake .4s;pointer-events:none}
 @keyframes pop{50%{transform:scale(1.12)}}
 @keyframes shake{20%,60%{transform:translateX(-.4rem)}40%,80%{transform:translateX(.4rem)}}
@@ -221,7 +222,7 @@ const SYM_RAW = `ㄅ|玻|冰淇淋|ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ|🍦
 ㄩ|迂|魚|ㄩˊ|🐟
 ㄚ|啊|鴨子|ㄧㄚ ˙ㄗ|🦆
 ㄛ|喔|喔喔|ㄛ ㄛ|🐓
-ㄜ|鵝|鵝|ㄜˊ|🦢
+ㄜ|鵝|天鵝|ㄊㄧㄢ ㄜˊ|🦢
 ㄝ|耶|椰子|ㄧㄝ ˙ㄗ|🥥
 ㄞ|哀|愛心|ㄞˋ ㄒㄧㄣ|❤️
 ㄟ|欸|杯子|ㄅㄟ ˙ㄗ|🥤
@@ -238,10 +239,10 @@ SYM_RAW.split('\n').forEach(l => { const [s, say, word, zy, emo] = l.split('|');
 // ---------- 聲調 ----------
 const TONES = {
   1: {mark:'ˉ', name:'一聲', tip:'平平的，像小貓伸懶腰', ch:'媽', zy:'ㄇㄚ'},
-  2: {mark:'ˊ', name:'二聲', tip:'往上爬，像在問「嗯？」', ch:'麻', zy:'ㄇㄚˊ'},
-  3: {mark:'ˇ', name:'三聲', tip:'先溜下去，再爬上來', ch:'馬', zy:'ㄇㄚˇ'},
-  4: {mark:'ˋ', name:'四聲', tip:'用力往下跳', ch:'罵', zy:'ㄇㄚˋ'},
-  5: {mark:'˙', name:'輕聲', tip:'輕輕的、短短的', ch:'媽媽', zy:'ㄇㄚ ˙ㄇㄚ', emo:'👩'}
+  2: {mark:'ˊ', name:'二聲', tip:'往上爬，像在問「真的嗎？」', ch:'麻', zy:'ㄇㄚˊ'},
+  3: {mark:'ˇ', name:'三聲', tip:'像溜滑梯，先溜下去，再爬上來', ch:'馬', zy:'ㄇㄚˇ'},
+  4: {mark:'ˋ', name:'四聲', tip:'咚！從高高的地方跳下來', ch:'罵', zy:'ㄇㄚˋ'},
+  5: {mark:'˙', name:'輕聲', tip:'輕輕的、短短的，像在說悄悄話', ch:'媽媽', zy:'ㄇㄚ ˙ㄇㄚ', emo:'👩'}
 };
 // 注音（不含聲調）| 一聲 二聲 三聲 四聲
 const TONE_BANK = [
@@ -289,11 +290,19 @@ const LEVELS = [
   {id:'w3', sec:'word', title:'家人和生活', bank:'w3'}
 ];
 const STICKERS = [...'🎀🦄🌈🧁🍭🌷🐰🐥🦋🍰👑💖🌟🍩🐼🐨🦩🍓🎠🌸🐣🍒🎈🐻🍦🐞🌼🐬🦊🎁'.match(/\p{Extended_Pictographic}/gu)];
-const PASS_LINES = ['過關了！你好棒！', '太厲害了，過關了！'];
-const REST_LINE = '今天玩好久了，眼睛要休息一下喔，明天再一起玩吧！';
-const FIXED_LINES = ['歡迎來到粉紅注音小屋！', '先完成前面的關卡喔！', '哇！得到新貼紙！', REST_LINE, ...PASS_LINES, '輕聲', '輕輕的', '找找看', '在哪裡？', '哪一張圖有這個聲音呢？', '第一個聲音是哪一個呢？', '裡面有哪一個聲音呢？', '是第幾聲呢？', '第二個字是第幾聲呢？', '第二個字是輕聲', '拼起來是什麼呢？', '是哪一個呢？', '讀讀看，是哪一個呢？'];
-const PRAISE = ['好棒！', '答對了！', '你好厲害！', '哇～太棒了！', '真聰明！', '就是這個！'];
-const SORRY = ['沒關係，再試一次～', '再聽聽看喔～', '差一點點，加油！'];
+const PASS_LINES = ['過關了！你好認真，咪咪好開心！', '耶！過關了！我們一起拍拍手！', '你做到了！好棒喔！'];
+const REST_LINE = '今天你好認真喔！咪咪想睡覺了，讓眼睛休息一下，明天再一起玩吧！';
+const HELLO_NEW = '歡迎來到粉紅注音小屋！我是小貓咪咪！', HELLO_BACK = '你回來了！咪咪好想你喔！';
+const LOCK_LINE = '這一關還在睡覺，先玩前面的關卡喔！', STICKER_LINE = '哇！送你一張新貼紙！';
+const FIXED_LINES = [HELLO_NEW, HELLO_BACK, LOCK_LINE, STICKER_LINE, REST_LINE, ...PASS_LINES, '輕聲', '輕輕的', '找找看', '在哪裡？', '哪一張圖有這個聲音呢？', '第一個聲音是哪一個呢？', '裡面有哪一個聲音呢？', '是第幾聲呢？', '第二個字是第幾聲呢？', '第二個字是輕聲', '拼起來是什麼呢？', '是哪一個呢？', '讀讀看，是哪一個呢？'];
+const PRAISE = ['答對了！你聽得好仔細！', '哇～你記住了耶！', '好厲害，咪咪好佩服你！', '就是它！好棒喔！', '耶！你好認真！', '對了對了！'];
+const PRAISE_RETRY = ['再試一次就找到了，好棒！', '你沒有放棄，好厲害！', '找到了！慢慢來就對了！'];
+const SORRY = ['嗯～不是這個喔，再聽一次看看～', '沒關係，咪咪也常常猜錯！', '差一點點！再找找看～', '慢慢來，不用急喔～'];
+const HINT_LINE = '咪咪偷偷告訴你，答案在發亮的那一個喔！';
+// 新台詞還沒重做語音前，先借用舊的錄音（重跑 make_voice.py 之後就會用新的）
+const OLD_SAY = {[HELLO_NEW]:'歡迎來到粉紅注音小屋！', [HELLO_BACK]:'歡迎來到粉紅注音小屋！', [LOCK_LINE]:'先完成前面的關卡喔！', [STICKER_LINE]:'哇！得到新貼紙！',
+  [REST_LINE]:'今天玩好久了，眼睛要休息一下喔，明天再一起玩吧！', [PASS_LINES[0]]:'過關了！你好棒！', [PASS_LINES[1]]:'太厲害了，過關了！', [PASS_LINES[2]]:'過關了！你好棒！',
+  '天鵝':'鵝', '鵝，天鵝的鵝':'鵝，鵝的鵝'};
 
 // ---------- 小工具 ----------
 const $ = s => document.querySelector(s);
@@ -376,7 +385,7 @@ const VBUF = {};
 let vTok = 0, vSrc = null, voiceGain = null;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function clip(text){
-  const f = (window.VOICE_MAP || {})[text];
+  const M = window.VOICE_MAP || {}, f = M[text] || M[OLD_SAY[text]];
   if (!f || !AC) return null;
   if (VBUF[f]) return VBUF[f];
   try {
@@ -517,27 +526,32 @@ function toggle(k){
 function splash(){
   screen = 'splash';
   view(`<div class="splash">${catSVG('happy').replace('class="cat', 'class="cat big')}
-    <h1>粉紅注音小屋</h1><p>和小貓咪咪一起學ㄅㄆㄇ</p>
-    <button class="btn" onclick="start()">點我開始 ▶</button></div>`);
+    <h1>粉紅注音小屋</h1><p>咪咪等你好久了，一起來玩ㄅㄆㄇ！</p>
+    <button class="btn" onclick="start()">一起玩 ▶</button></div>`);
 }
-function start(){ audioInit(); sfx('win'); speak('歡迎來到粉紅注音小屋！'); bgmUpdate(); home(); }
+function start(){ audioInit(); sfx('win'); speak(S.stars || Object.keys(S.done).length ? HELLO_BACK : HELLO_NEW); bgmUpdate(); home(); }
 
 // 首頁地圖
 const unlocked = i => S.openAll || i === 0 || !!S.done[LEVELS[i - 1].id];
 function home(){
   screen = 'home'; Q = null;
   const cur = LEVELS.findIndex((l, i) => unlocked(i) && !S.done[l.id]);
-  view(topbar() + `<div class="hello" onclick="catTalk()">${catSVG('normal')}<div class="bubble" id="hb">今天想學什麼呢？</div></div>` +
+  view(topbar() + `<div class="hello" onclick="catTalk()">${catSVG('normal')}<div class="bubble" id="hb">${greet(cur)}</div></div>` +
     SECTIONS.map(sec => `<div class="sec"><h3>${sec.icon} ${sec.name}</h3><div class="tiles">` +
       LEVELS.map((l, i) => l.sec !== sec.key ? '' : `<button class="tile ${unlocked(i) ? '' : 'lock'} ${S.done[l.id] ? 'done' : ''} ${i === cur ? 'now' : ''}" onclick="openLevel(${i})">
         <span class="n">第 ${i + 1} 關</span><span class="t ${l.title.length > 4 ? 'sm' : ''}">${l.title}</span></button>`).join('') + `</div></div>`).join('') +
     `<div class="foot" id="install"></div>`);
   renderInstall();
 }
-function catTalk(){ const b = $('#hb'); if (b) { const t = pick(['喵～加油！', '一起來玩吧！', '你今天好棒！', '點一個關卡吧！']); b.textContent = t; } sfx('tap'); }
+function greet(cur){
+  const h = new Date().getHours(), hi = h < 11 ? '早安！' : h < 18 ? '午安！' : '晚安！';
+  if (cur < 0) return hi + '全部關卡都完成了，你是注音小高手！👑';
+  return hi + (cur === 0 && !S.stars ? '從第 1 關開始，咪咪陪你玩～' : '發亮的那一關在等你喔！');
+}
+function catTalk(){ const b = $('#hb'); if (b) { const t = pick(['喵～摸摸我好癢喔！', '你來找咪咪玩，我好開心！', '慢慢來，咪咪陪你。', '發亮的那一關在等你喔！', '累了可以先喝口水喔～', '喵～你今天好棒！']); b.textContent = t; } sfx('tap'); }
 function openLevel(i){
   audioInit(); sfx('tap');
-  if (!unlocked(i)) { const b = $('#hb'); if (b) b.textContent = '先完成前面的關卡喔！'; speak('先完成前面的關卡喔！'); return; }
+  if (!unlocked(i)) { const b = $('#hb'); if (b) b.textContent = LOCK_LINE; speak(LOCK_LINE); return; }
   learn(i);
 }
 
@@ -558,7 +572,7 @@ function cardSpeak(c){
 function cardHTML(c){
   if (c.kind === 'sym') { const d = SYM[c.s]; return `<div class="sym">${d.s}</div><div class="emo">${d.emo}</div><div class="word">${d.word}</div><div class="zy">${zyHTML(d.zy, d.s)}</div>`; }
   if (c.kind === 'tone') { const d = TONES[c.t]; return `<div class="opt" style="box-shadow:none;background:none;min-height:0">${toneSVG(c.t).replace('<svg', '<svg style="width:8rem;height:5.5rem"')}</div><div class="sym" style="font-size:4.5rem">${d.name}</div>${d.emo ? `<div class="emo">${d.emo}</div>` : ''}<div class="word">${d.ch}　<span class="zy">${zyHTML(d.zy)}</span></div><div class="tip">${d.tip}</div>`; }
-  if (c.kind === 'pin') { const [a, b, ch] = c.p; return `<div class="plus">${a}<i>＋</i>${b}<i>＝</i>${a}${b}</div><div class="word" style="font-size:3rem">${ch}</div><div class="tip">把兩個聲音快快連起來唸</div>`; }
+  if (c.kind === 'pin') { const [a, b, ch] = c.p; return `<div class="plus">${a}<i>＋</i>${b}<i>＝</i>${a}${b}</div><div class="word" style="font-size:3rem">${ch}</div><div class="tip">先慢慢唸，再快快連起來唸</div>`; }
   const [w, emo, zy] = c.w; return `<div class="emo" style="font-size:6rem">${emo}</div><div class="word" style="font-size:2.4rem">${w}</div><div class="zy" style="font-size:2.2rem;color:var(--deep)">${zyHTML(zy)}</div>`;
 }
 function learn(i){
@@ -569,13 +583,13 @@ function learn(i){
 function drawLearn(){
   const {cards, k, lv} = L, c = cards[k], last = k === cards.length - 1;
   view(topbar() + `<div class="learn">
-    <div class="ask">${catSVG('normal')}<div class="bubble">${lv.sec === 'sym' ? '跟著咪咪唸唸看！' : lv.sec === 'tone' ? '聽聽聲音怎麼走～' : lv.sec === 'pin' ? '兩個注音拼起來！' : '看圖讀讀看！'}<br><small>點圖卡可以再聽一次</small></div></div>
+    <div class="ask">${catSVG('normal')}<div class="bubble">${lv.sec === 'sym' ? '咪咪唸一次，你跟著唸一次喔！' : lv.sec === 'tone' ? '聲音會走路喔，聽聽它往哪裡走～' : lv.sec === 'pin' ? '兩個注音手牽手，拼成一個字！' : '看看圖，一起讀讀看！'}<br><small>想再聽一次，就點點圖卡喔</small></div></div>
     <button class="panel lcard" onclick="sayCard()">${cardHTML(c)}</button>
     <div class="dots">${cards.map((_, j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>
     <div class="nav">
       <button class="btn ghost" onclick="learnMove(-1)" style="visibility:${k ? 'visible' : 'hidden'}">◀</button>
       <button class="say" onclick="sayCard()" aria-label="再聽一次">🔊</button>
-      <button class="btn" onclick="learnMove(1)">${last ? '開始挑戰 ⭐' : '▶'}</button>
+      <button class="btn" onclick="learnMove(1)">${last ? '我準備好了 ⭐' : '▶'}</button>
     </div></div>`);
   speak(cardSpeak(c));
 }
@@ -593,18 +607,18 @@ function qSym(s, type, pool){
   const d = SYM[s];
   if (type === 'hear') {
     const wrong = sample(pool.filter(x => x !== s), 2);
-    return {prompt:`<button class="say" onclick="replay()" style="width:6rem;height:6rem;font-size:3rem">🔊</button>`, bubble:'聽聽看，是哪一個？',
+    return {prompt:`<button class="say" onclick="replay()" style="width:6rem;height:6rem;font-size:3rem">🔊</button>`, bubble:'耳朵準備好～是哪一個呢？',
       speak:['找找看', d.say, '在哪裡？'], after:[symLine(d)],
       opts:shuffle([s, ...wrong]).map(x => ({v:x, html:`<span class="sym">${x}</span>`})), ans:s, key:s};
   }
   if (type === 'pic') {
     const wrong = sample(pool.filter(x => x !== s && !SYM[x].zy.includes(s)), 2);
-    return {prompt:`<span class="sym">${s}</span>`, bubble:'哪一張圖有這個聲音？',
+    return {prompt:`<span class="sym">${s}</span>`, bubble:'哪一張圖藏著這個聲音呢？',
       speak:[d.say, '哪一張圖有這個聲音呢？'], after:[symLine(d)],
       opts:shuffle([s, ...wrong]).map(x => ({v:x, html:`<span class="emo">${SYM[x].emo}</span>`})), ans:s, key:s};
   }
   const wrong = sample(pool.filter(x => x !== s && !d.zy.includes(x)), 2);
-  return {prompt:`<div class="col"><span class="emo">${d.emo}</span><span class="q" style="font-size:1.6rem">${d.word}</span></div>`, bubble:'這是哪一個注音？',
+  return {prompt:`<div class="col"><span class="emo">${d.emo}</span><span class="q" style="font-size:1.6rem">${d.word}</span></div>`, bubble:'仔細聽，是哪一個注音呢？',
     speak:[d.word, SYM_FIRST(d) ? '第一個聲音是哪一個呢？' : '裡面有哪一個聲音呢？'], after:[symLine(d)],
     opts:shuffle([s, ...wrong]).map(x => ({v:x, html:`<span class="sym">${x}</span>`})), ans:s, key:s};
 }
@@ -613,14 +627,14 @@ function toneOpt(t){ return {v:t, html:`${toneSVG(t)}<span class="lb">${TONES[t]
 function qTone(t, others){
   const [zy, chars] = pick(TONE_BANK), ch = chars[t - 1];
   const wrong = sample(others.filter(x => x !== t), 2);
-  return {prompt:`<div class="col"><span class="q" style="font-size:4rem">${ch}</span><span class="zy">${zyHTML(zy)} ？</span></div>`, bubble:'聽聽看，是第幾聲？',
+  return {prompt:`<div class="col"><span class="q" style="font-size:4rem">${ch}</span><span class="zy">${zyHTML(zy)} ？</span></div>`, bubble:'聲音往哪裡走？是第幾聲呢？',
     speak:[ch, ch, '是第幾聲呢？'], after:[ch, TONES[t].name],
     opts:shuffle([t, ...wrong]).map(toneOpt), ans:t, key:'tone' + t};
 }
 function qLight(){
   const [w, emo, zy, t1] = pick(LIGHT);
   const wrong = sample([1, 2, 3, 4].filter(x => x !== t1), 1);
-  return {prompt:`<div class="col"><span class="emo">${emo}</span><span class="zy">${zyHTML(zy.replace(/˙\S+$/, '？'))}</span></div>`, bubble:'第二個字是第幾聲？',
+  return {prompt:`<div class="col"><span class="emo">${emo}</span><span class="zy">${zyHTML(zy.replace(/˙\S+$/, '？'))}</span></div>`, bubble:'仔細聽第二個字喔，是第幾聲？',
     speak:[w, '第二個字是第幾聲呢？'], after:[w, '第二個字是輕聲'],
     opts:shuffle([5, t1, ...wrong]).map(toneOpt), ans:5, key:'tone5'};
 }
@@ -631,10 +645,10 @@ function qPin(p, type, pool){
   let cand = [...new Set(pool.map(x => x[0] + x[1]))].filter(x => x !== ans);
   const near = cand.filter(x => x[0] === a || x[1] === b);
   const wrong = sample(near.length >= 2 ? near : cand, 2);
-  if (type === 'join') return {prompt:`<div class="plus" style="font-size:3.6rem">${a}<i>＋</i>${b}<i>＝</i>？</div>`, bubble:'拼起來是哪一個？',
+  if (type === 'join') return {prompt:`<div class="plus" style="font-size:3.6rem">${a}<i>＋</i>${b}<i>＝</i>？</div>`, bubble:'手牽手拼起來，會變成哪一個？',
     speak:[SYM[a].say, SYM[b].say, '拼起來是什麼呢？'], after:[SYM[a].say, SYM[b].say, ch],
     opts:shuffle([ans, ...wrong]).map(x => ({v:x, html:`<span class="zy" style="font-size:2.4rem">${x}</span>`})), ans, key:'pin'};
-  return {prompt:`<button class="say" onclick="replay()" style="width:6rem;height:6rem;font-size:3rem">🔊</button>`, bubble:'聽聽看，是哪一個？',
+  return {prompt:`<button class="say" onclick="replay()" style="width:6rem;height:6rem;font-size:3rem">🔊</button>`, bubble:'耳朵準備好～是哪一個呢？',
     speak:[ch, ch, '是哪一個呢？'], after:[SYM[a].say, SYM[b].say, ch],
     opts:shuffle([ans, ...wrong]).map(x => ({v:x, html:`<span class="zy" style="font-size:2.4rem">${x}</span>`})), ans, key:'pin'};
 }
@@ -642,10 +656,10 @@ function qWord(w, type, bank){
   const [word, emo, zy] = w;
   const same = bank.filter(x => x[0] !== word && x[2] !== zy && x[1] !== emo);
   const wrong = sample(same, 2);
-  if (type === 'read') return {prompt:`<span class="emo">${emo}</span>`, bubble:'這個怎麼拼？',
+  if (type === 'read') return {prompt:`<span class="emo">${emo}</span>`, bubble:'這個要怎麼拼呢？',
     speak:[word, '是哪一個呢？'], after:[word],
     opts:shuffle([w, ...wrong]).map(x => ({v:x[0], html:`<span class="zy" style="font-size:${x[2].length > 6 ? 1.35 : 1.75}rem">${zyHTML(x[2])}</span>`})), ans:word, key:'word'};
-  return {prompt:`<span class="zy" style="font-size:3rem">${zyHTML(zy)}</span>`, bubble:'讀讀看，是哪一個？',
+  return {prompt:`<span class="zy" style="font-size:3rem">${zyHTML(zy)}</span>`, bubble:'自己讀讀看，是哪一張圖呢？',
     speak:['讀讀看，是哪一個呢？'], after:[word],
     opts:shuffle([w, ...wrong]).map(x => ({v:x[0], html:`<span class="emo">${x[1]}</span>`})), ans:word, key:'word'};
 }
@@ -691,17 +705,20 @@ async function answer(j){
   audioInit();
   const q = Q.list[Q.k], o = q.opts[j], btn = document.querySelector(`.opt[data-j="${j}"]`);
   if (o.v === q.ans) {
-    Q.lock = true; btn.classList.add('ok'); sfx('ok'); setCat('happy', pick(PRAISE));
+    Q.lock = true; btn.classList.add('ok'); sfx('ok'); setCat('happy', pick(Q.wrong ? PRAISE_RETRY : PRAISE));
     stat(q.key, Q.wrong ? undefined : true);
     if (!Q.wrong) { Q.earned++; addStar(btn); }
     const tk = Q.token;
     await speak(q.after);
     await new Promise(r => setTimeout(r, 350));
     if (!Q || Q.token !== tk) return;
-    Q.k++; Q.wrong = false; Q.lock = false;
+    Q.k++; Q.wrong = false; Q.miss = 0; Q.lock = false;
     if (Q.k >= Q.list.length) finish(); else drawQ();
   } else {
-    btn.classList.add('no'); sfx('no'); setCat('think', pick(SORRY));
+    btn.classList.add('no'); sfx('no'); Q.miss = (Q.miss || 0) + 1;
+    // 錯兩次就輕輕提示答案，不讓孩子卡住
+    if (Q.miss >= 2) { setCat('think', HINT_LINE); const a = q.opts.findIndex(x => x.v === q.ans), ab = document.querySelector(`.opt[data-j="${a}"]`); if (ab) ab.classList.add('hint'); }
+    else setCat('think', pick(SORRY));
     if (!Q.wrong) stat(q.key, false);
     Q.wrong = true;
     setTimeout(() => { if (Q && Q.list[Q.k] === q) speak(q.speak); }, 700);
@@ -724,9 +741,10 @@ function finish(){
   screen = 'result'; Q = null;
   const next = i + 1 < LEVELS.length ? i + 1 : -1;
   view(topbar() + `<div class="result">${catSVG('happy').replace('class="cat', 'class="cat big')}
-    <h1>過關了！</h1>
+    <h1>${earned === total ? '全部答對，太厲害了！' : '過關了！你好棒！'}</h1>
     <div class="stars">${'⭐'.repeat(earned)}<span style="opacity:.25">${'⭐'.repeat(total - earned)}</span></div>
-    <p style="font-size:1.2rem;font-weight:700;margin:0">拿到 ${earned} 顆星星　${first && next >= 0 ? '・ 下一關打開了！' : ''}</p>
+    <p style="font-size:1.2rem;font-weight:700;margin:0">拿到 ${earned} 顆星星　${first && next >= 0 ? '・ 下一關的門打開了！' : ''}</p>
+    ${earned < total ? '<p style="margin:0;color:var(--mute);font-weight:700">有答錯也沒關係，多玩幾次會越來越厲害喔！</p>' : ''}
     <div class="row">
       <button class="btn ghost" onclick="tapGo(()=>learn(${i}))">🔁 再玩一次</button>
       ${next >= 0 ? `<button class="btn" onclick="tapGo(()=>learn(${next}))">下一關 ▶</button>` : `<button class="btn" onclick="tapGo(home)">全部完成 👑</button>`}
@@ -739,8 +757,8 @@ function hearts(){
 }
 function stickerPop(idx){
   const d = document.createElement('div'); d.className = 'mask';
-  d.innerHTML = `<div class="pop"><h2>🎉 得到新貼紙！</h2><div class="newstk">${STICKERS[idx]}</div><p style="font-weight:700">已經貼到貼紙簿了</p><div class="row"><button class="btn ghost" id="sb">看貼紙簿</button><button class="btn" id="sk">好耶！</button></div></div>`;
-  document.body.appendChild(d); sfx('sticker'); speak('哇！得到新貼紙！');
+  d.innerHTML = `<div class="pop"><h2>🎉 送你一張新貼紙！</h2><div class="newstk">${STICKERS[idx]}</div><p style="font-weight:700">咪咪幫你貼到貼紙簿裡了</p><div class="row"><button class="btn ghost" id="sb">看貼紙簿</button><button class="btn" id="sk">好耶！</button></div></div>`;
+  document.body.appendChild(d); sfx('sticker'); speak(STICKER_LINE);
   d.querySelector('#sk').onclick = () => { d.remove(); sfx('tap'); };
   d.querySelector('#sb').onclick = () => { d.remove(); tapGo(book); };
 }
@@ -751,7 +769,7 @@ function book(){
   const have = Math.min(STICKERS.length, Math.floor(S.stars / 10)), toNext = S.stars % 10;
   view(topbar() + `<div class="panel"><h2>📒 我的貼紙簿</h2>
     <p style="margin:.2rem 0 .4rem;font-weight:700">⭐ 共 ${S.stars} 顆星星　・ 貼紙 ${have} / ${STICKERS.length} 張</p>
-    ${have < STICKERS.length ? `<p style="margin:.2rem 0;font-weight:700">再拿 ${10 - toNext} 顆星星換下一張貼紙！</p><div class="bar"><i style="width:${toNext * 10}%"></i></div>` : '<p>全部貼紙都收集到了！👑</p>'}
+    ${have < STICKERS.length ? `<p style="margin:.2rem 0;font-weight:700">再拿 ${10 - toNext} 顆星星，就可以換下一張貼紙喔！</p><div class="bar"><i style="width:${toNext * 10}%"></i></div>` : '<p>全部貼紙都收集到了，你好厲害！👑</p>'}
     </div><div style="height:.8rem"></div>
     <div class="book">${STICKERS.map((s, k) => k < have ? `<div class="stk" onclick="sfx('tap')">${s}</div>` : `<div class="stk no">?</div>`).join('')}</div>`);
 }
@@ -796,7 +814,7 @@ function parentPage(){
       <div class="sgrid">${syms.map(s => `<span class="sg l${level(s)} ${isBad(s) ? 'bad' : ''}">${s}</span>`).join('')}</div>
       <p style="margin-top:.6rem"><b>聲調</b></p><div class="chips">${tlv}</div>
       <div class="legend"><span style="--c:#eee">還沒練習</span><span style="--c:#fff2c9">練習中</span><span style="--c:#d8f6e5">學會了</span><span style="--c:#ff5a5a">常錯</span></div>
-      ${bad.length ? `<p style="margin-top:.6rem">常錯的符號：<b style="font-size:1.3rem;color:var(--deep)">${bad.join('　')}</b><br><small>可以陪她回到這些關卡多玩幾次。</small></p>` : ''}
+      ${bad.length ? `<p style="margin-top:.6rem">常錯的符號：<b style="font-size:1.3rem;color:var(--deep)">${bad.join('　')}</b><br><small>可以陪孩子回到這些關卡多玩幾次，每次玩一點點就好，不用急。</small></p>` : ''}
       <p><small>「學會了」＝第一次就答對 3 次以上、正確率七成以上。</small></p>
     </div>
     <div class="panel"><h2>⏰ 每天遊戲時間</h2>
@@ -838,8 +856,8 @@ function restScreen(){
   stopVoice();
   view(`<div class="result">${catSVG('sleep').replace('class="cat', 'class="cat big')}
     <h1>休息一下吧 😴</h1>
-    <p style="font-size:1.3rem;font-weight:700;margin:0">今天玩好久了，<br>咪咪想睡覺了，眼睛也要休息喔！</p>
-    <p style="font-weight:700;color:var(--mute)">明天再一起玩吧 🌙</p>
+    <p style="font-size:1.3rem;font-weight:700;margin:0">今天你好認真喔！<br>咪咪有點想睡覺了，眼睛也要休息一下～</p>
+    <p style="font-weight:700;color:var(--mute)">明天再來找咪咪玩吧 🌙</p>
     <button class="btn ghost small" onclick="parentGate(extend)">大人解鎖</button></div>`);
   setTimeout(() => speak(REST_LINE), 300);
 }
