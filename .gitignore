@@ -1,3 +1,4 @@
 .claude/
 __pycache__/
 samples/
+tools/voice_test/
