@@ -432,7 +432,9 @@ async function speak(parts){
   const tok = vTok;
   if (!S.voice || !parts.length) { await wait(300); return; }
   if (AC && AC.state === 'suspended') { try { AC.resume(); } catch(e) {} }
-  const bufs = await Promise.all(parts.map(clip));
+  // 優先播「整句一次錄好」的版本，語調比較像真人；還沒錄到才退回一段一段接
+  const whole = parts.length > 1 ? await clip(parts.join('，')) : null;
+  const bufs = whole ? [whole] : await Promise.all(parts.map(clip));
   if (tok !== vTok) return;
   if (bufs.every(Boolean)) {
     duck(true);
@@ -451,6 +453,15 @@ function allPhrases(){
   LIGHT.forEach(l => out.add(l[0]));
   Object.values(PIN).flat().forEach(p => out.add(p[2]));
   Object.values(WORDS).flat().forEach(w => out.add(w[0]));
+  // 每一種會連著唸的組合，也錄成整句
+  const lines = [], syms = Object.keys(SYM), pins = Object.values(PIN).flat();
+  syms.forEach(s => ['hear', 'pic', 'sym'].forEach(t => { const q = qSym(s, t, syms); lines.push(q.speak, q.after); }));
+  [1, 2, 3, 4, 5].forEach(t => lines.push(cardSpeak({kind:'tone', t})));
+  TONE_BANK.forEach(b => [1, 2, 3, 4].forEach(t => { const q = qTone(t, [1, 2, 3, 4], b); lines.push(q.speak, q.after); }));
+  LIGHT.forEach(l => { const q = qLight(l); lines.push(q.speak, q.after); });
+  pins.forEach(p => { lines.push(cardSpeak({kind:'pin', p})); ['join', 'hear'].forEach(t => { const q = qPin(p, t, pins); lines.push(q.speak, q.after); }); });
+  Object.values(WORDS).forEach(bank => bank.forEach(w => ['read', 'pic'].forEach(t => { const q = qWord(w, t, bank); lines.push(q.speak, q.after); })));
+  lines.forEach(l => { l = [].concat(l).filter(Boolean); l.forEach(x => out.add(x)); if (l.length > 1) out.add(l.join('，')); });
   return [...out];
 }
 
@@ -624,15 +635,15 @@ function qSym(s, type, pool){
 }
 const SYM_FIRST = d => d.zy.replace('˙', '')[0] === d.s;
 function toneOpt(t){ return {v:t, html:`${toneSVG(t)}<span class="lb">${TONES[t].name}</span>`}; }
-function qTone(t, others){
-  const [zy, chars] = pick(TONE_BANK), ch = chars[t - 1];
+function qTone(t, others, b){
+  const [zy, chars] = b || pick(TONE_BANK), ch = chars[t - 1];
   const wrong = sample(others.filter(x => x !== t), 2);
   return {prompt:`<div class="col"><span class="q" style="font-size:4rem">${ch}</span><span class="zy">${zyHTML(zy)} ？</span></div>`, bubble:'聲音往哪裡走？是第幾聲呢？',
     speak:[ch, ch, '是第幾聲呢？'], after:[ch, TONES[t].name],
     opts:shuffle([t, ...wrong]).map(toneOpt), ans:t, key:'tone' + t};
 }
-function qLight(){
-  const [w, emo, zy, t1] = pick(LIGHT);
+function qLight(l){
+  const [w, emo, zy, t1] = l || pick(LIGHT);
   const wrong = sample([1, 2, 3, 4].filter(x => x !== t1), 1);
   return {prompt:`<div class="col"><span class="emo">${emo}</span><span class="zy">${zyHTML(zy.replace(/˙\S+$/, '？'))}</span></div>`, bubble:'仔細聽第二個字喔，是第幾聲？',
     speak:[w, '第二個字是第幾聲呢？'], after:[w, '第二個字是輕聲'],
@@ -825,7 +836,8 @@ function parentPage(){
     <div class="panel"><h2>🔊 聲音</h2>
       ${[['sfx', '答對／答錯音效'], ['bgm', '輕柔背景音樂'], ['voice', '語音唸題目（建議開著）']].map(([k, n]) => `<div class="sw"><span>${n}</span><button class="tg ${S[k] ? 'on' : ''}" onclick="ptoggle('${k}')"></button></div>`).join('')}
       <p><small>${window.VOICE_MAP ? '使用預先做好的 AI 真人語音（不需要網路）。' : VOICE ? '目前使用的語音：' + VOICE.name :'⚠️ 這台裝置找不到中文語音。iPhone／iPad：設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文（台灣）；Android：設定 → 文字轉語音 → 下載中文語音。'}</small></p>
-      <div class="row" style="justify-content:flex-start"><button class="btn ghost small" onclick="speak('玻，冰淇淋的玻')">試聽語音</button></div>
+      <p style="margin-top:.6rem"><b>逐一試聽注音念法</b><br><small>點一個符號聽聽看，念得怪怪的可以記下來告訴我。</small></p>
+      <div class="sgrid">${syms.map(s => `<button class="sg l2" onclick="audioInit();speak(symLine(SYM['${s}']))">${s}</button>`).join('')}</div>
     </div>
     <div class="panel"><h2>🔓 關卡</h2>
       <div class="sw"><span>全部關卡直接開放（不用照順序）</span><button class="tg ${S.openAll ? 'on' : ''}" onclick="ptoggle('openAll')"></button></div>
