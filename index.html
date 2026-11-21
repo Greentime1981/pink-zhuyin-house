@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>粉紅注音小屋</title>
+<meta name="theme-color" content="#ffb3cc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="注音小屋">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<script src="audio/map.js"></script>
+<style>
+:root{
+  --bg1:#ffe3ec; --bg2:#ffc4d8; --dot:#ffffff66;
+  --card:#fff8fb; --pink:#ff7aa8; --deep:#e5487f; --soft:#ffd1e1;
+  --text:#6b3a4e; --mute:#a77a8c; --yellow:#ffcf5c; --green:#5ccf94; --grey:#d9cbd1;
+  --shadow:0 .35rem 0 #f0a3bf; --r:1.4rem;
+  font-size:clamp(15px, 1.8vmin + 8px, 26px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",sans-serif;
+  color:var(--text);
+  background:var(--bg1);
+  background-image:radial-gradient(var(--dot) 18%, transparent 19%),radial-gradient(var(--dot) 18%, transparent 19%),linear-gradient(180deg,var(--bg1),var(--bg2));
+  background-size:3rem 3rem,3rem 3rem,100% 100%;
+  background-position:0 0,1.5rem 1.5rem,0 0;
+  background-attachment:fixed;
+  user-select:none;-webkit-user-select:none;overflow-x:hidden;
+}
+button{font-family:inherit;color:inherit;border:0;cursor:pointer;background:none}
+#app{max-width:860px;margin:0 auto;min-height:100%;padding:max(.6rem,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(1rem,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));display:flex;flex-direction:column}
+
+/* 上方列 */
+.top{display:flex;align-items:center;gap:.45rem;margin-bottom:.6rem}
+.top .sp{flex:1}
+.ib{min-width:2.8rem;height:2.8rem;border-radius:1rem;background:var(--card);box-shadow:var(--shadow);font-size:1.4rem;display:flex;align-items:center;justify-content:center;padding:0 .5rem;gap:.25rem;transition:transform .1s}
+.ib:active{transform:translateY(.2rem);box-shadow:0 .15rem 0 #f0a3bf}
+.ib.off{opacity:.45;filter:grayscale(1)}
+.ib b{font-size:1.05rem}
+.star-pill b{color:#d8932a}
+
+/* 小貓 */
+.cat{width:7rem;height:7rem;flex:none;display:block}
+.cat.big{width:12rem;height:12rem}
+.cat.happy{animation:hop .6s ease}
+.cat.think{animation:tilt .6s ease}
+.cat.idle{animation:breathe 3s ease-in-out infinite}
+@keyframes hop{0%,100%{transform:translateY(0)}30%{transform:translateY(-1.2rem) scale(1.05)}60%{transform:translateY(0) scale(.97,1.03)}}
+@keyframes tilt{0%,100%{transform:rotate(0)}30%{transform:rotate(-8deg)}70%{transform:rotate(6deg)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+.bubble{background:var(--card);border-radius:1.2rem;padding:.6rem 1rem;font-size:1.15rem;font-weight:700;box-shadow:var(--shadow);position:relative;line-height:1.4}
+.bubble:before{content:"";position:absolute;left:-.55rem;top:50%;margin-top:-.5rem;border:.5rem solid transparent;border-right-color:var(--card);border-left:0}
+
+/* 卡片 */
+.panel{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:1rem}
+h2{margin:.2rem 0 .6rem;font-size:1.3rem}
+.btn{background:var(--pink);color:#fff;font-weight:800;font-size:1.35rem;border-radius:1.4rem;padding:.8rem 1.6rem;box-shadow:0 .35rem 0 var(--deep);transition:transform .1s}
+.btn:active{transform:translateY(.25rem);box-shadow:0 .1rem 0 var(--deep)}
+.btn.ghost{background:var(--card);color:var(--deep);box-shadow:var(--shadow)}
+.btn.small{font-size:1rem;padding:.55rem 1rem}
+.row{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap}
+
+/* 開始畫面 */
+.splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1rem}
+.splash h1{font-size:2.6rem;margin:0;color:var(--deep);text-shadow:0 .2rem 0 #fff}
+.splash p{margin:0;font-size:1.15rem;color:var(--mute);font-weight:700}
+.splash .btn{font-size:1.8rem;padding:1rem 2.6rem;animation:breathe 1.6s infinite}
+
+/* 首頁地圖 */
+.hello{display:flex;align-items:center;gap:.9rem;margin-bottom:.4rem}
+.hello .cat{width:6rem;height:6rem}
+.sec{margin:.8rem 0}
+.sec h3{margin:0 0 .5rem;font-size:1.15rem;display:flex;align-items:center;gap:.4rem}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(6.4rem,1fr));gap:.7rem}
+.tile{background:var(--card);border-radius:1.2rem;box-shadow:var(--shadow);padding:.5rem .3rem .6rem;display:flex;flex-direction:column;align-items:center;gap:.15rem;position:relative;min-height:5.6rem;justify-content:center;transition:transform .1s}
+.tile:active{transform:translateY(.2rem)}
+.tile .n{font-size:.75rem;color:var(--mute);font-weight:700}
+.tile .t{font-size:1.45rem;font-weight:800;letter-spacing:.05em;line-height:1.2;text-align:center;word-break:break-all}
+.tile .t.sm{font-size:1.05rem;letter-spacing:0}
+.tile.lock{opacity:.55;filter:grayscale(.7)}
+.tile.lock:after{content:"🔒";position:absolute;right:.3rem;top:.2rem;font-size:1rem}
+.tile.done:after{content:"👑";position:absolute;right:.25rem;top:.1rem;font-size:1.1rem}
+.tile.now{background:#fff;outline:.22rem solid var(--pink);animation:breathe 1.8s infinite}
+.foot{margin-top:auto;padding-top:1rem;text-align:center}
+
+/* 學習卡 */
+.learn{flex:1;display:flex;flex-direction:column;gap:.8rem}
+.lcard{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;text-align:center;min-height:16rem}
+.lcard .sym{font-size:7rem;font-weight:800;line-height:1;color:var(--deep)}
+.lcard .emo{font-size:4.6rem;line-height:1.1}
+.lcard .word{font-size:1.8rem;font-weight:800}
+.lcard .zy{font-size:1.6rem;font-weight:700;color:var(--mute)}
+.lcard .tip{font-size:1.1rem;font-weight:700;color:var(--mute)}
+.hl{color:var(--deep);background:var(--soft);border-radius:.3rem;padding:0 .1rem}
+.sy{display:inline-block;margin:0 .18em}
+.plus{display:flex;align-items:center;gap:.6rem;font-size:4rem;font-weight:800;color:var(--deep)}
+.plus i{font-style:normal;color:var(--mute);font-size:2.6rem}
+.dots{display:flex;justify-content:center;gap:.4rem}
+.dots i{width:.7rem;height:.7rem;border-radius:50%;background:var(--grey)}
+.dots i.on{background:var(--pink)}
+.say{font-size:2rem;width:4.4rem;height:4.4rem;border-radius:50%;background:var(--yellow);box-shadow:0 .3rem 0 #e0a92e}
+.say:active{transform:translateY(.2rem)}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:.6rem}
+.nav .btn{min-width:6rem}
+
+/* 題目 */
+.quiz{flex:1;display:flex;flex-direction:column;gap:.8rem}
+.paws{display:flex;justify-content:center;gap:.25rem;font-size:1.15rem;flex-wrap:wrap}
+.paws i{font-style:normal;opacity:.25;filter:grayscale(1)}
+.paws i.on{opacity:1;filter:none}
+.ask{display:flex;align-items:center;gap:.7rem}
+.ask .cat{width:5.6rem;height:5.6rem}
+.ask .bubble{flex:1}
+.prompt{display:flex;align-items:center;justify-content:center;gap:1rem;min-height:9rem;text-align:center;flex:1;max-height:20rem}
+.prompt .sym{font-size:6rem;font-weight:800;color:var(--deep);line-height:1}
+.prompt .emo{font-size:5.5rem;line-height:1}
+.prompt .zy{font-size:2.6rem;font-weight:800;color:var(--deep)}
+.prompt .q{font-size:2.4rem;font-weight:800}
+.prompt .col{display:flex;flex-direction:column;align-items:center;gap:.3rem}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
+.opt{background:#fff;border-radius:1.4rem;box-shadow:0 .4rem 0 #f0a3bf;min-height:clamp(7.2rem,22vh,11rem);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.4rem;transition:transform .1s, opacity .3s}
+.opt:active{transform:translateY(.25rem)}
+.opt .sym{font-size:4.2rem;font-weight:800;line-height:1}
+.opt .emo{font-size:4rem;line-height:1}
+.opt .zy{font-size:1.75rem;font-weight:800;line-height:1.3}
+.opt .lb{font-size:1.05rem;font-weight:800;margin-top:.15rem}
+.opt svg{width:4.2rem;height:3rem}
+.opt.ok{background:#e6fbef;box-shadow:0 .4rem 0 var(--green);animation:pop .4s}
+.opt.no{opacity:.35;filter:grayscale(1);animation:shake .4s;pointer-events:none}
+@keyframes pop{50%{transform:scale(1.12)}}
+@keyframes shake{20%,60%{transform:translateX(-.4rem)}40%,80%{transform:translateX(.4rem)}}
+.flystar{position:fixed;font-size:2.6rem;z-index:50;pointer-events:none;transition:all .8s cubic-bezier(.5,-0.4,.7,1)}
+
+/* 結果、貼紙 */
+.result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.8rem}
+.result h1{margin:0;font-size:2.4rem;color:var(--deep)}
+.result .stars{font-size:2rem;letter-spacing:.1em}
+.book{display:grid;grid-template-columns:repeat(auto-fill,minmax(4.6rem,1fr));gap:.6rem}
+.stk{aspect-ratio:1;border-radius:1.2rem;background:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:2.8rem}
+.stk.no{background:#fbeaf0;color:#e9c3d2;font-size:1.6rem;font-weight:800;box-shadow:none;border:.15rem dashed #f3bcd0}
+.bar{height:1.1rem;border-radius:1rem;background:#fbe1ea;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--yellow),var(--pink));border-radius:1rem}
+.mask{position:fixed;inset:0;background:#6b3a4e88;z-index:40;display:flex;align-items:center;justify-content:center;padding:16px}
+.pop{background:var(--card);border-radius:1.6rem;padding:1.4rem;max-width:30rem;width:100%;text-align:center;box-shadow:0 .5rem 0 #f0a3bf;max-height:92vh;overflow:auto}
+.pop .newstk{font-size:7rem;animation:spin .9s ease}
+@keyframes spin{from{transform:scale(0) rotate(-200deg)}to{transform:scale(1) rotate(0)}}
+.heart{position:fixed;top:-3rem;font-size:2rem;z-index:60;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+
+/* 家長區 */
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:.8rem auto 0;max-width:16rem}
+.pad button{background:#fff;border-radius:1rem;box-shadow:var(--shadow);font-size:1.5rem;font-weight:800;height:3.2rem}
+.ans{font-size:2rem;font-weight:800;min-height:2.8rem;letter-spacing:.1em;color:var(--deep)}
+.parent .panel{margin-bottom:.8rem}
+.parent p{margin:.3rem 0;line-height:1.6}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(2.8rem,1fr));gap:.35rem}
+.sg{border-radius:.7rem;text-align:center;font-weight:800;font-size:1.35rem;padding:.25rem 0;background:#eee;color:#aaa;position:relative}
+.sg.l1{background:#fff2c9;color:#b27b00}
+.sg.l2{background:#d8f6e5;color:#20844f}
+.sg.bad:after{content:"";position:absolute;right:.15rem;top:.15rem;width:.5rem;height:.5rem;border-radius:50%;background:#ff5a5a}
+.legend{display:flex;gap:.8rem;flex-wrap:wrap;font-size:.85rem;color:var(--mute);margin-top:.4rem}
+.legend span:before{content:"";display:inline-block;width:.8rem;height:.8rem;border-radius:.25rem;margin-right:.25rem;vertical-align:-.1rem;background:var(--c)}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap}
+.chip{border-radius:1rem;padding:.4rem .9rem;background:#fff;box-shadow:var(--shadow);font-weight:700}
+.chip.on{background:var(--pink);color:#fff;box-shadow:0 .3rem 0 var(--deep)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.35rem 0}
+.tg{width:3.4rem;height:1.9rem;border-radius:1rem;background:var(--grey);position:relative;flex:none;transition:background .2s}
+.tg:after{content:"";position:absolute;left:.2rem;top:.2rem;width:1.5rem;height:1.5rem;border-radius:50%;background:#fff;transition:left .2s}
+.tg.on{background:var(--green)}
+.tg.on:after{left:1.7rem}
+small{color:var(--mute)}
+.finger{position:fixed;font-size:3.4rem;z-index:45;animation:bob 1s infinite}
+.finger.bc{bottom:.4rem;left:50%;margin-left:-1.7rem}
+.finger.br{bottom:.4rem;right:1rem}
+.finger.tr{top:.4rem;right:4.5rem;transform:rotate(180deg);animation:none}
+@keyframes bob{50%{transform:translateY(.6rem)}}
+@media (max-width:420px){
+  .prompt{min-height:7.5rem}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+/* =========================================================
+   粉紅注音小屋　（學齡前注音練習，單一檔案、可離線）
+   ========================================================= */
+
+// ---------- 注音符號資料 ----------
+// 符號 | 念法用字（給語音唸） | 例字 | 例字注音 | 圖
+const SYM_RAW = `ㄅ|玻|冰淇淋|ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ|🍦
+ㄆ|坡|葡萄|ㄆㄨˊ ㄊㄠˊ|🍇
+ㄇ|摸|貓咪|ㄇㄠ ㄇㄧ|🐱
+ㄈ|佛|飛機|ㄈㄟ ㄐㄧ|✈️
+ㄉ|得|蛋糕|ㄉㄢˋ ㄍㄠ|🍰
+ㄊ|特|兔子|ㄊㄨˋ ˙ㄗ|🐰
+ㄋ|訥|牛奶|ㄋㄧㄡˊ ㄋㄞˇ|🥛
+ㄌ|勒|老虎|ㄌㄠˇ ㄏㄨˇ|🐯
+ㄍ|哥|狗狗|ㄍㄡˇ ㄍㄡˇ|🐶
+ㄎ|科|恐龍|ㄎㄨㄥˇ ㄌㄨㄥˊ|🦖
+ㄏ|喝|花朵|ㄏㄨㄚ ㄉㄨㄛˇ|🌸
+ㄐ|基|橘子|ㄐㄩˊ ˙ㄗ|🍊
+ㄑ|七|氣球|ㄑㄧˋ ㄑㄧㄡˊ|🎈
+ㄒ|西|西瓜|ㄒㄧ ㄍㄨㄚ|🍉
+ㄓ|知|豬|ㄓㄨ|🐷
+ㄔ|吃|車子|ㄔㄜ ˙ㄗ|🚗
+ㄕ|詩|獅子|ㄕ ˙ㄗ|🦁
+ㄖ|日|熱狗|ㄖㄜˋ ㄍㄡˇ|🌭
+ㄗ|資|足球|ㄗㄨˊ ㄑㄧㄡˊ|⚽
+ㄘ|疵|草莓|ㄘㄠˇ ㄇㄟˊ|🍓
+ㄙ|思|松鼠|ㄙㄨㄥ ㄕㄨˇ|🐿️
+ㄧ|衣|衣服|ㄧ ˙ㄈㄨ|👗
+ㄨ|屋|烏龜|ㄨ ㄍㄨㄟ|🐢
+ㄩ|迂|魚|ㄩˊ|🐟
+ㄚ|啊|鴨子|ㄧㄚ ˙ㄗ|🦆
+ㄛ|喔|喔喔|ㄛ ㄛ|🐓
+ㄜ|鵝|鵝|ㄜˊ|🦢
+ㄝ|耶|椰子|ㄧㄝ ˙ㄗ|🥥
+ㄞ|哀|愛心|ㄞˋ ㄒㄧㄣ|❤️
+ㄟ|欸|杯子|ㄅㄟ ˙ㄗ|🥤
+ㄠ|凹|帽子|ㄇㄠˋ ˙ㄗ|👒
+ㄡ|歐|猴子|ㄏㄡˊ ˙ㄗ|🐒
+ㄢ|安|飯糰|ㄈㄢˋ ㄊㄨㄢˊ|🍙
+ㄣ|恩|門|ㄇㄣˊ|🚪
+ㄤ|骯|糖果|ㄊㄤˊ ㄍㄨㄛˇ|🍬
+ㄥ|鞥|星星|ㄒㄧㄥ ㄒㄧㄥ|⭐
+ㄦ|兒|耳朵|ㄦˇ ˙ㄉㄨㄛ|👂`;
+const SYM = {};
+SYM_RAW.split('\n').forEach(l => { const [s, say, word, zy, emo] = l.split('|'); SYM[s] = {s, say, word, zy, emo}; });
+
+// ---------- 聲調 ----------
+const TONES = {
+  1: {mark:'ˉ', name:'一聲', tip:'平平的，像小貓伸懶腰', ch:'媽', zy:'ㄇㄚ'},
+  2: {mark:'ˊ', name:'二聲', tip:'往上爬，像在問「嗯？」', ch:'麻', zy:'ㄇㄚˊ'},
+  3: {mark:'ˇ', name:'三聲', tip:'先溜下去，再爬上來', ch:'馬', zy:'ㄇㄚˇ'},
+  4: {mark:'ˋ', name:'四聲', tip:'用力往下跳', ch:'罵', zy:'ㄇㄚˋ'},
+  5: {mark:'˙', name:'輕聲', tip:'輕輕的、短短的', ch:'媽媽', zy:'ㄇㄚ ˙ㄇㄚ', emo:'👩'}
+};
+// 注音（不含聲調）| 一聲 二聲 三聲 四聲
+const TONE_BANK = [
+  ['ㄇㄚ','媽麻馬罵'], ['ㄧ','衣姨椅意'], ['ㄨ','屋無五霧'], ['ㄅㄚ','八拔靶爸'],
+  ['ㄊㄤ','湯糖躺燙'], ['ㄩ','淤魚雨玉'], ['ㄏㄨ','呼湖虎戶'], ['ㄊㄧ','踢提體替'], ['ㄈㄤ','方房紡放']
+];
+// 第二個字唸輕聲的詞
+const LIGHT = [
+  ['媽媽','👩','ㄇㄚ ˙ㄇㄚ',1], ['爸爸','👨','ㄅㄚˋ ˙ㄅㄚ',4], ['哥哥','👦','ㄍㄜ ˙ㄍㄜ',1],
+  ['姐姐','👱‍♀️','ㄐㄧㄝˇ ˙ㄐㄧㄝ',3], ['弟弟','🧒','ㄉㄧˋ ˙ㄉㄧ',4], ['妹妹','👧','ㄇㄟˋ ˙ㄇㄟ',4]
+];
+const addTone = (zy, t) => t === 5 ? '˙' + zy : t === 1 ? zy : zy + TONES[t].mark;
+
+// ---------- 拼音（聲母＋韻母，一聲）----------
+const PIN = {
+  p1: [['ㄅ','ㄚ','八'],['ㄆ','ㄚ','趴'],['ㄇ','ㄚ','媽'],['ㄈ','ㄚ','發'],['ㄉ','ㄚ','搭'],['ㄊ','ㄚ','他'],['ㄌ','ㄚ','拉'],['ㄕ','ㄚ','沙'],['ㄏ','ㄚ','哈'],['ㄘ','ㄚ','擦']],
+  p2: [['ㄐ','ㄧ','雞'],['ㄑ','ㄧ','七'],['ㄒ','ㄧ','西'],['ㄉ','ㄧ','低'],['ㄓ','ㄨ','豬'],['ㄕ','ㄨ','書'],['ㄍ','ㄨ','姑'],['ㄏ','ㄨ','呼'],['ㄐ','ㄩ','居'],['ㄍ','ㄜ','哥'],['ㄎ','ㄜ','科'],['ㄏ','ㄜ','喝']],
+  p3: [['ㄇ','ㄠ','貓'],['ㄅ','ㄠ','包'],['ㄉ','ㄠ','刀'],['ㄍ','ㄠ','高'],['ㄈ','ㄟ','飛'],['ㄅ','ㄟ','杯'],['ㄎ','ㄞ','開'],['ㄕ','ㄢ','山'],['ㄙ','ㄢ','三'],['ㄊ','ㄤ','湯'],['ㄈ','ㄤ','方'],['ㄉ','ㄥ','燈'],['ㄈ','ㄣ','分'],['ㄍ','ㄡ','勾']]
+};
+
+// ---------- 字詞 ----------
+const WORDS = {
+  w1: [['貓','🐱','ㄇㄠ'],['魚','🐟','ㄩˊ'],['豬','🐷','ㄓㄨ'],['狗','🐶','ㄍㄡˇ'],['傘','☂️','ㄙㄢˇ'],['車','🚗','ㄔㄜ'],['雞','🐔','ㄐㄧ'],['糖','🍬','ㄊㄤˊ'],['蛋','🥚','ㄉㄢˋ'],['門','🚪','ㄇㄣˊ'],['燈','💡','ㄉㄥ'],['書','📖','ㄕㄨ'],['花','🌸','ㄏㄨㄚ'],['牛','🐮','ㄋㄧㄡˊ'],['鴨','🦆','ㄧㄚ']],
+  w2: [['兔子','🐰','ㄊㄨˋ ˙ㄗ'],['西瓜','🍉','ㄒㄧ ㄍㄨㄚ'],['飛機','✈️','ㄈㄟ ㄐㄧ'],['星星','⭐','ㄒㄧㄥ ㄒㄧㄥ'],['耳朵','👂','ㄦˇ ˙ㄉㄨㄛ'],['老虎','🐯','ㄌㄠˇ ㄏㄨˇ'],['草莓','🍓','ㄘㄠˇ ㄇㄟˊ'],['氣球','🎈','ㄑㄧˋ ㄑㄧㄡˊ'],['蘋果','🍎','ㄆㄧㄥˊ ㄍㄨㄛˇ'],['大象','🐘','ㄉㄚˋ ㄒㄧㄤˋ'],['蝴蝶','🦋','ㄏㄨˊ ㄉㄧㄝˊ'],['月亮','🌙','ㄩㄝˋ ㄌㄧㄤˋ'],['烏龜','🐢','ㄨ ㄍㄨㄟ'],['獅子','🦁','ㄕ ˙ㄗ'],['猴子','🐒','ㄏㄡˊ ˙ㄗ']],
+  w3: [['爸爸','👨','ㄅㄚˋ ˙ㄅㄚ'],['媽媽','👩','ㄇㄚ ˙ㄇㄚ'],['哥哥','👦','ㄍㄜ ˙ㄍㄜ'],['妹妹','👧','ㄇㄟˋ ˙ㄇㄟ'],['寶寶','👶','ㄅㄠˇ ˙ㄅㄠ'],['彩虹','🌈','ㄘㄞˇ ㄏㄨㄥˊ'],['太陽','☀️','ㄊㄞˋ ㄧㄤˊ'],['下雨','🌧️','ㄒㄧㄚˋ ㄩˇ'],['蛋糕','🎂','ㄉㄢˋ ㄍㄠ'],['房子','🏠','ㄈㄤˊ ˙ㄗ'],['大樹','🌳','ㄉㄚˋ ㄕㄨˋ'],['牛奶','🥛','ㄋㄧㄡˊ ㄋㄞˇ'],['冰淇淋','🍦','ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ']]
+};
+
+// ---------- 關卡 ----------
+const SECTIONS = [
+  {key:'sym', icon:'🔤', name:'認識注音'},
+  {key:'tone', icon:'🎵', name:'四個聲調'},
+  {key:'pin', icon:'🧩', name:'拼拼看'},
+  {key:'word', icon:'🖼️', name:'看圖讀讀看'}
+];
+const SYM_GROUPS = ['ㄅㄆㄇㄈ','ㄉㄊㄋㄌ','ㄍㄎㄏㄐ','ㄑㄒㄓㄔ','ㄕㄖㄗㄘ','ㄙㄧㄨㄩ','ㄚㄛㄜㄝ','ㄞㄟㄠㄡ','ㄢㄣㄤㄥㄦ'];
+const LEVELS = [
+  ...SYM_GROUPS.map((g, i) => ({id:'s' + (i + 1), sec:'sym', title:g, items:[...g]})),
+  {id:'t1', sec:'tone', title:'一二三四聲', items:[1,2,3,4]},
+  {id:'t2', sec:'tone', title:'輕聲', items:[5]},
+  {id:'p1', sec:'pin', title:'ㄇ＋ㄚ', bank:'p1'},
+  {id:'p2', sec:'pin', title:'ㄐ＋ㄧ', bank:'p2'},
+  {id:'p3', sec:'pin', title:'ㄇ＋ㄠ', bank:'p3'},
+  {id:'w1', sec:'word', title:'一個字', bank:'w1'},
+  {id:'w2', sec:'word', title:'兩個字', bank:'w2'},
+  {id:'w3', sec:'word', title:'家人和生活', bank:'w3'}
+];
+const STICKERS = [...'🎀🦄🌈🧁🍭🌷🐰🐥🦋🍰👑💖🌟🍩🐼🐨🦩🍓🎠🌸🐣🍒🎈🐻🍦🐞🌼🐬🦊🎁'.match(/\p{Extended_Pictographic}/gu)];
+const PASS_LINES = ['過關了！你好棒！', '太厲害了，過關了！'];
+const REST_LINE = '今天玩好久了，眼睛要休息一下喔，明天再一起玩吧！';
+const FIXED_LINES = ['歡迎來到粉紅注音小屋！', '先完成前面的關卡喔！', '哇！得到新貼紙！', REST_LINE, ...PASS_LINES, '輕聲', '輕輕的', '找找看', '在哪裡？', '哪一張圖有這個聲音呢？', '第一個聲音是哪一個呢？', '裡面有哪一個聲音呢？', '是第幾聲呢？', '第二個字是第幾聲呢？', '第二個字是輕聲', '拼起來是什麼呢？', '是哪一個呢？', '讀讀看，是哪一個呢？'];
+const PRAISE = ['好棒！', '答對了！', '你好厲害！', '哇～太棒了！', '真聰明！', '就是這個！'];
+const SORRY = ['沒關係，再試一次～', '再聽聽看喔～', '差一點點，加油！'];
+
+// ---------- 小工具 ----------
+const $ = s => document.querySelector(s);
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const sample = (a, n) => shuffle(a).slice(0, n);
+const zyHTML = (zy, hl) => zy.split(' ').map(x => `<span class="sy">${hl ? x.split(hl).join(`<b class="hl">${hl}</b>`) : x}</span>`).join('');
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const BOPO = /[ㄅ-ㄩˉˊˇˋ˙]/;
+
+// ---------- 存檔（只存在這台裝置）----------
+const KEY = 'pinkZhuyin.v1';
+let S;
+function defaults(){ return {stars:0, done:{}, st:{}, sfx:true, bgm:true, voice:true, limit:15, day:{d:today(), sec:0, bonus:0}, openAll:false, noIOS:false}; }
+function load(){ S = defaults(); try { const v = JSON.parse(localStorage.getItem(KEY) || 'null'); if (v) S = Object.assign(S, v); } catch(e) {} if (S.day.d !== today()) S.day = {d:today(), sec:0, bonus:0}; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+function stat(k, ok){ const r = S.st[k] || (S.st[k] = {n:0, c:0, w:0}); if (ok === true) { r.n++; r.c++; } else if (ok === false) { r.n++; r.w++; } }
+
+// ---------- 小貓（原創）----------
+function catSVG(mood){
+  const eyes = mood === 'happy'
+    ? '<path d="M66 108 q10 -12 20 0" /><path d="M114 108 q10 -12 20 0" />'
+    : mood === 'sleep'
+    ? '<path d="M66 106 q10 10 20 0" /><path d="M114 106 q10 10 20 0" />'
+    : '<ellipse cx="76" cy="106" rx="8" ry="10" fill="#6b3a4e" stroke="none"/><ellipse cx="124" cy="106" rx="8" ry="10" fill="#6b3a4e" stroke="none"/><circle cx="79" cy="102" r="3" fill="#fff" stroke="none"/><circle cx="127" cy="102" r="3" fill="#fff" stroke="none"/>';
+  const mouth = mood === 'happy' ? '<path d="M88 128 q12 16 24 0 z" fill="#ff8fb3"/>' : '<path d="M88 126 q6 7 12 0 q6 7 12 0"/>';
+  return `<svg viewBox="0 0 200 200" class="cat ${mood === 'happy' ? 'happy' : mood === 'think' ? 'think' : 'idle'}" aria-label="小貓咪咪">
+  <g stroke="#6b3a4e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <ellipse cx="100" cy="182" rx="46" ry="14" fill="#f3a9c4" stroke="none" opacity=".45"/>
+    <path d="M42 86 L36 26 L88 56 Z" fill="#fff"/><path d="M50 72 L47 42 L74 58 Z" fill="#ffb3cc" stroke="none"/>
+    <path d="M158 86 L164 26 L112 56 Z" fill="#fff"/><path d="M150 72 L153 42 L126 58 Z" fill="#ffb3cc" stroke="none"/>
+    <ellipse cx="100" cy="112" rx="70" ry="60" fill="#fff"/>
+    <g transform="translate(150 44) rotate(18)"><path d="M0 0 L-24 -14 L-24 14 Z" fill="#ff5f97"/><path d="M0 0 L24 -14 L24 14 Z" fill="#ff5f97"/><circle r="7" fill="#ff8fb3"/></g>
+    <circle cx="62" cy="128" r="10" fill="#ffc2d6" stroke="none"/><circle cx="138" cy="128" r="10" fill="#ffc2d6" stroke="none"/>
+    ${eyes}
+    <path d="M95 117 h10 l-5 6 z" fill="#ff7aa8" stroke-width="3"/>
+    ${mouth}
+    <path d="M30 112 h22 M30 124 l22 -4 M170 112 h-22 M170 124 l-22 -4" stroke-width="3.5"/>
+  </g></svg>`;
+}
+
+// 聲調的小圖（線條走向）
+function toneSVG(t){
+  const p = {1:'M8 12 H56', 2:'M8 36 L56 8', 3:'M8 16 Q22 40 32 38 Q44 36 56 12', 4:'M8 8 L56 38'}[t];
+  return t === 5 ? `<svg viewBox="0 0 64 44"><circle cx="32" cy="24" r="7" fill="#e5487f"/></svg>`
+    : `<svg viewBox="0 0 64 44"><path d="${p}" fill="none" stroke="#e5487f" stroke-width="7" stroke-linecap="round"/></svg>`;
+}
+
+// ---------- 聲音：語音 ----------
+let VOICE = null;
+function initVoice(){
+  if (!('speechSynthesis' in window)) return;
+  const choose = () => {
+    const vs = speechSynthesis.getVoices();
+    VOICE = vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /Taiwan|台灣|臺灣|Mei-Jia|Hanhan|Yating/i.test(v.name)) || vs.find(v => /zh[-_]CN|cmn/i.test(v.lang)) || null;
+  };
+  choose(); speechSynthesis.onvoiceschanged = choose;
+}
+function ttsSpeak(text){
+  return new Promise(res => {
+    if (!('speechSynthesis' in window) || !text) { setTimeout(res, 300); return; }
+    let done = false;
+    const fin = () => { if (done) return; done = true; duck(false); res(); };
+    try {
+      const busy = speechSynthesis.speaking || speechSynthesis.pending;
+      if (busy) speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = VOICE ? VOICE.lang : 'zh-TW'; if (VOICE) u.voice = VOICE;
+      u.rate = 0.8; u.pitch = 1.15;
+      u.onend = fin; u.onerror = fin;
+      duck(true);
+      if (busy) setTimeout(() => speechSynthesis.speak(u), 60); else speechSynthesis.speak(u);
+      setTimeout(fin, 1500 + text.length * 420);
+    } catch(e) { fin(); }
+  });
+}
+// 預錄的 AI 語音（audio/ 資料夾；對照表在 audio/map.js）
+const VBUF = {};
+let vTok = 0, vSrc = null, voiceGain = null;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function clip(text){
+  const f = (window.VOICE_MAP || {})[text];
+  if (!f || !AC) return null;
+  if (VBUF[f]) return VBUF[f];
+  try {
+    const ab = await (await fetch('audio/' + f)).arrayBuffer();
+    const raw = await new Promise((ok, no) => AC.decodeAudioData(ab, ok, no));
+    VBUF[f] = trimSilence(raw);
+    return VBUF[f];
+  } catch(e) { return null; }
+}
+// AI 語音前後約有 0.2 秒和 1 秒的空白，剪掉才不會一段一段拖很久
+function trimSilence(b){
+  try {
+    const d = b.getChannelData(0), sr = b.sampleRate, th = 0.008;
+    let a = 0, z = d.length - 1;
+    while (a < d.length && Math.abs(d[a]) < th) a++;
+    while (z > a && Math.abs(d[z]) < th) z--;
+    a = Math.max(0, a - Math.round(sr * 0.03)); z = Math.min(d.length, z + Math.round(sr * 0.12));
+    if (z - a < sr * 0.1) return b;
+    const nb = AC.createBuffer(b.numberOfChannels, z - a, sr);
+    for (let c = 0; c < b.numberOfChannels; c++) nb.getChannelData(c).set(b.getChannelData(c).subarray(a, z));
+    return nb;
+  } catch(e) { return b; }
+}
+function playBuf(buf, tok){
+  return new Promise(res => {
+    if (tok !== vTok) return res();
+    if (!voiceGain) { voiceGain = AC.createGain(); voiceGain.gain.value = 1; voiceGain.connect(AC.destination); }
+    const src = AC.createBufferSource(); src.buffer = buf; src.connect(voiceGain);
+    let done = false; const fin = () => { if (done) return; done = true; if (vSrc === src) vSrc = null; res(); };
+    src.onended = fin; vSrc = src; src.start();
+    setTimeout(fin, buf.duration * 1000 + 600);
+  });
+}
+function stopVoice(){
+  vTok++;
+  if (vSrc) { try { vSrc.stop(); } catch(e) {} vSrc = null; }
+  try { if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel(); } catch(e) {}
+  duck(false);
+}
+// parts：一句或幾個片段，依序播放
+async function speak(parts){
+  parts = [].concat(parts).filter(Boolean);
+  stopVoice();
+  const tok = vTok;
+  if (!S.voice || !parts.length) { await wait(300); return; }
+  if (AC && AC.state === 'suspended') { try { AC.resume(); } catch(e) {} }
+  const bufs = await Promise.all(parts.map(clip));
+  if (tok !== vTok) return;
+  if (bufs.every(Boolean)) {
+    duck(true);
+    for (let k = 0; k < bufs.length; k++) { if (tok !== vTok) return; await playBuf(bufs[k], tok); if (k < bufs.length - 1) await wait(220); }
+    if (tok === vTok) duck(false);
+    return;
+  }
+  return ttsSpeak(parts.join('，'));
+}
+// 所有可能會唸的片段（產生音檔用）
+function allPhrases(){
+  const out = new Set(FIXED_LINES);
+  Object.values(SYM).forEach(d => { out.add(d.say); out.add(d.word); out.add(symLine(d)); });
+  Object.values(TONES).forEach(d => { out.add(d.name); out.add(d.ch); });
+  TONE_BANK.forEach(([, cs]) => [...cs].forEach(c => out.add(c)));
+  LIGHT.forEach(l => out.add(l[0]));
+  Object.values(PIN).flat().forEach(p => out.add(p[2]));
+  Object.values(WORDS).flat().forEach(w => out.add(w[0]));
+  return [...out];
+}
+
+// ---------- 聲音：音效與背景音樂（程式合成，不用音檔）----------
+let AC = null, sfxGain, bgmGain, bgmTimer = null, bgmNext = 0, bgmStep = 0;
+function audioInit(){
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    sfxGain = AC.createGain(); sfxGain.gain.value = 0.35; sfxGain.connect(AC.destination);
+    bgmGain = AC.createGain(); bgmGain.gain.value = 0.07; bgmGain.connect(AC.destination);
+  } catch(e) { AC = null; }
+}
+const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+function tone(m, t, dur, out, type, vol){
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type || 'sine'; o.frequency.value = hz(m);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.6, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
+}
+function sfx(kind){
+  if (!S.sfx || !AC) return;
+  const t = AC.currentTime + 0.02;
+  if (kind === 'ok') { tone(84, t, .35, sfxGain); tone(88, t + .1, .5, sfxGain); tone(96, t + .2, .6, sfxGain, 'sine', .3); }
+  else if (kind === 'no') { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(330, t); o.frequency.exponentialRampToValueAtTime(200, t + .3); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.5, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + .35); o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t + .4); }
+  else if (kind === 'tap') tone(91, t, .12, sfxGain, 'sine', .25);
+  else if (kind === 'win') [72, 76, 79, 84, 88].forEach((m, i) => tone(m, t + i * .11, .5, sfxGain));
+  else if (kind === 'sticker') [79, 84, 88, 91, 96, 91, 96].forEach((m, i) => tone(m, t + i * .09, .45, sfxGain, 'sine', .5));
+}
+// 原創音樂盒旋律（小聲、循環）
+const MELODY = [[72,1],[76,1],[79,1],[76,1],[77,1],[76,1],[74,2],[72,1],[74,1],[76,1],[79,1],[81,1],[79,1],[76,2],[77,1],[76,1],[74,1],[72,1],[74,1],[76,1],[79,2],[76,1],[74,1],[72,1],[69,1],[71,1],[74,1],[72,2]];
+const BASS = [48, 53, 55, 48, 53, 48, 55, 48];
+function bgmTick(){
+  if (!AC) return;
+  const beat = 0.46;
+  while (bgmNext < AC.currentTime + 0.3) {
+    const [m, b] = MELODY[bgmStep % MELODY.length];
+    tone(m, bgmNext, 1.4, bgmGain, 'sine', .5); tone(m + 12, bgmNext, .6, bgmGain, 'sine', .12);
+    let acc = 0; for (let i = 0; i < bgmStep % MELODY.length; i++) acc += MELODY[i][1];
+    if (acc % 4 === 0) tone(BASS[(acc / 4) % BASS.length], bgmNext, 1.8, bgmGain, 'sine', .35);
+    bgmNext += b * beat; bgmStep++;
+  }
+}
+function bgmUpdate(){
+  if (!AC) return;
+  const want = S.bgm && !document.hidden && !resting;
+  if (want && !bgmTimer) { bgmNext = AC.currentTime + 0.1; bgmTimer = setInterval(bgmTick, 100); bgmTick(); }
+  if (!want && bgmTimer) { clearInterval(bgmTimer); bgmTimer = null; }
+}
+function duck(on){ if (bgmGain && AC) bgmGain.gain.setTargetAtTime(on ? 0.02 : 0.07, AC.currentTime, 0.1); }
+
+// ---------- 畫面 ----------
+let screen = 'splash', resting = false, Q = null, L = null;
+function view(html){ $('#app').innerHTML = html; window.scrollTo(0, 0); }
+function topbar(){
+  return `<div class="top">
+    ${screen !== 'home' ? `<button class="ib" onclick="tapGo(home)" aria-label="回首頁">🏠</button>` : ''}
+    <button class="ib star-pill" onclick="tapGo(book)" aria-label="星星和貼紙">⭐<b id="starN">${S.stars}</b></button>
+    <button class="ib" onclick="tapGo(book)" aria-label="貼紙簿">📒</button>
+    <span class="sp"></span>
+    <button class="ib ${S.sfx ? '' : 'off'}" onclick="toggle('sfx')" aria-label="答對答錯音效">🔔</button>
+    <button class="ib ${S.bgm ? '' : 'off'}" onclick="toggle('bgm')" aria-label="背景音樂">🎵</button>
+    <button class="ib" onclick="tapGo(parentGate)" aria-label="家長專區">👩‍👧</button>
+  </div>`;
+}
+function tapGo(fn){ audioInit(); sfx('tap'); stopVoice(); Q = null; fn(); }
+function toggle(k){
+  S[k] = !S[k]; save(); audioInit(); bgmUpdate(); if (k === 'sfx' && S.sfx) sfx('tap');
+  document.querySelectorAll('.top .ib').forEach(b => { if (b.getAttribute('onclick') === `toggle('${k}')`) b.classList.toggle('off', !S[k]); });
+}
+
+// 開始畫面（第一次點擊才能開聲音）
+function splash(){
+  screen = 'splash';
+  view(`<div class="splash">${catSVG('happy').replace('class="cat', 'class="cat big')}
+    <h1>粉紅注音小屋</h1><p>和小貓咪咪一起學ㄅㄆㄇ</p>
+    <button class="btn" onclick="start()">點我開始 ▶</button></div>`);
+}
+function start(){ audioInit(); sfx('win'); speak('歡迎來到粉紅注音小屋！'); bgmUpdate(); home(); }
+
+// 首頁地圖
+const unlocked = i => S.openAll || i === 0 || !!S.done[LEVELS[i - 1].id];
+function home(){
+  screen = 'home'; Q = null;
+  const cur = LEVELS.findIndex((l, i) => unlocked(i) && !S.done[l.id]);
+  view(topbar() + `<div class="hello" onclick="catTalk()">${catSVG('normal')}<div class="bubble" id="hb">今天想學什麼呢？</div></div>` +
+    SECTIONS.map(sec => `<div class="sec"><h3>${sec.icon} ${sec.name}</h3><div class="tiles">` +
+      LEVELS.map((l, i) => l.sec !== sec.key ? '' : `<button class="tile ${unlocked(i) ? '' : 'lock'} ${S.done[l.id] ? 'done' : ''} ${i === cur ? 'now' : ''}" onclick="openLevel(${i})">
+        <span class="n">第 ${i + 1} 關</span><span class="t ${l.title.length > 4 ? 'sm' : ''}">${l.title}</span></button>`).join('') + `</div></div>`).join('') +
+    `<div class="foot" id="install"></div>`);
+  renderInstall();
+}
+function catTalk(){ const b = $('#hb'); if (b) { const t = pick(['喵～加油！', '一起來玩吧！', '你今天好棒！', '點一個關卡吧！']); b.textContent = t; } sfx('tap'); }
+function openLevel(i){
+  audioInit(); sfx('tap');
+  if (!unlocked(i)) { const b = $('#hb'); if (b) b.textContent = '先完成前面的關卡喔！'; speak('先完成前面的關卡喔！'); return; }
+  learn(i);
+}
+
+// ---------- 學習卡 ----------
+function learnItems(lv){
+  if (lv.sec === 'sym') return lv.items.map(s => ({kind:'sym', s}));
+  if (lv.sec === 'tone') return lv.items.map(t => ({kind:'tone', t}));
+  if (lv.sec === 'pin') return sample(PIN[lv.bank], 5).map(p => ({kind:'pin', p}));
+  return sample(WORDS[lv.bank], 5).map(w => ({kind:'word', w}));
+}
+const symLine = d => `${d.say}，${d.word}的${d.say}`;
+function cardSpeak(c){
+  if (c.kind === 'sym') return [symLine(SYM[c.s])];
+  if (c.kind === 'tone') { const d = TONES[c.t]; return c.t === 5 ? ['輕聲', d.ch, '輕輕的'] : [d.name, d.ch, d.ch]; }
+  if (c.kind === 'pin') { const [a, b, ch] = c.p; return [SYM[a].say, SYM[b].say, ch]; }
+  return [c.w[0]];
+}
+function cardHTML(c){
+  if (c.kind === 'sym') { const d = SYM[c.s]; return `<div class="sym">${d.s}</div><div class="emo">${d.emo}</div><div class="word">${d.word}</div><div class="zy">${zyHTML(d.zy, d.s)}</div>`; }
+  if (c.kind === 'tone') { const d = TONES[c.t]; return `<div class="opt" style="box-shadow:none;background:none;min-height:0">${toneSVG(c.t).replace('<svg', '<svg style="width:8rem;height:5.5rem"')}</div><div class="sym" style="font-size:4.5rem">${d.name}</div>${d.emo ? `<div class="emo">${d.emo}</div>` : ''}<div class="word">${d.ch}　<span class="zy">${zyHTML(d.zy)}</span></div><div class="tip">${d.tip}</div>`; }
+  if (c.kind === 'pin') { const [a, b, ch] = c.p; return `<div class="plus">${a}<i>＋</i>${b}<i>＝</i>${a}${b}</div><div class="word" style="font-size:3rem">${ch}</div><div class="tip">把兩個聲音快快連起來唸</div>`; }
+  const [w, emo, zy] = c.w; return `<div class="emo" style="font-size:6rem">${emo}</div><div class="word" style="font-size:2.4rem">${w}</div><div class="zy" style="font-size:2.2rem;color:var(--deep)">${zyHTML(zy)}</div>`;
+}
+function learn(i){
+  screen = 'learn';
+  L = {i, lv:LEVELS[i], cards:learnItems(LEVELS[i]), k:0};
+  drawLearn();
+}
+function drawLearn(){
+  const {cards, k, lv} = L, c = cards[k], last = k === cards.length - 1;
+  view(topbar() + `<div class="learn">
+    <div class="ask">${catSVG('normal')}<div class="bubble">${lv.sec === 'sym' ? '跟著咪咪唸唸看！' : lv.sec === 'tone' ? '聽聽聲音怎麼走～' : lv.sec === 'pin' ? '兩個注音拼起來！' : '看圖讀讀看！'}<br><small>點圖卡可以再聽一次</small></div></div>
+    <button class="panel lcard" onclick="sayCard()">${cardHTML(c)}</button>
+    <div class="dots">${cards.map((_, j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="nav">
+      <button class="btn ghost" onclick="learnMove(-1)" style="visibility:${k ? 'visible' : 'hidden'}">◀</button>
+      <button class="say" onclick="sayCard()" aria-label="再聽一次">🔊</button>
+      <button class="btn" onclick="learnMove(1)">${last ? '開始挑戰 ⭐' : '▶'}</button>
+    </div></div>`);
+  speak(cardSpeak(c));
+}
+function sayCard(){ audioInit(); speak(cardSpeak(L.cards[L.k])); }
+function learnMove(d){
+  sfx('tap');
+  if (d > 0 && L.k === L.cards.length - 1) { startQuiz(L.i, L.cards); return; }
+  L.k = Math.max(0, Math.min(L.cards.length - 1, L.k + d)); drawLearn();
+}
+
+// ---------- 題目產生器 ----------
+function learnedSyms(i){ const out = []; for (let j = 0; j <= i && j < 9; j++) out.push(...LEVELS[j].items); return out; }
+// 符號題：hear＝聽音選符號、pic＝看符號選圖、sym＝看圖選符號
+function qSym(s, type, pool){
+  const d = SYM[s];
+  if (type === 'hear') {
+    const wrong = sample(pool.filter(x => x !== s), 2);
+    return {prompt:`<button class="say" onclick="replay()" style="width:6rem;height:6rem;font-size:3rem">🔊</button>`, bubble:'聽聽看，是哪一個？',
+      speak:['找找看', d.say, '在哪裡？'], after:[symLine(d)],
+      opts:shuffle([s, ...wrong]).map(x => ({v:x, html:`<span class="sym">${x}</span>`})), ans:s, key:s};
+  }
+  if (type === 'pic') {
+    const wrong = sample(pool.filter(x => x !== s && !SYM[x].zy.includes(s)), 2);
+    return {prompt:`<span class="sym">${s}</span>`, bubble:'哪一張圖有這個聲音？',
+      speak:[d.say, '哪一張圖有這個聲音呢？'], after:[symLine(d)],
+      opts:shuffle([s, ...wrong]).map(x => ({v:x, html:`<span class="emo">${SYM[x].emo}</span>`})), ans:s, key:s};
+  }
+  const wrong = sample(pool.filter(x => x !== s && !d.zy.includes(x)), 2);
+  return {prompt:`<div class="col"><span class="emo">${d.emo}</span><span class="q" style="font-size:1.6rem">${d.word}</span></div>`, bubble:'這是哪一個注音？',
+    speak:[d.word, SYM_FIRST(d) ? '第一個聲音是哪一個呢？' : '裡面有哪一個聲音呢？'], after:[symLine(d)],
+    opts:shuffle([s, ...wrong]).map(x => ({v:x, html:`<span class="sym">${x}</span>`})), ans:s, key:s};
+}
+const SYM_FIRST = d => d.zy.replace('˙', '')[0] === d.s;
+function toneOpt(t){ return {v:t, html:`${toneSVG(t)}<span class="lb">${TONES[t].name}</span>`}; }
+function qTone(t, others){
+  const [zy, chars] = pick(TONE_BANK), ch = chars[t - 1];
+  const wrong = sample(others.filter(x => x !== t), 2);
+  return {prompt:`<div class="col"><span class="q" style="font-size:4rem">${ch}</span><span class="zy">${zyHTML(zy)} ？</span></div>`, bubble:'聽聽看，是第幾聲？',
+    speak:[ch, ch, '是第幾聲呢？'], after:[ch, TONES[t].name],
+    opts:shuffle([t, ...wrong]).map(toneOpt), ans:t, key:'tone' + t};
+}
+function qLight(){
+  const [w, emo, zy, t1] = pick(LIGHT);
+  const wrong = sample([1, 2, 3, 4].filter(x => x !== t1), 1);
+  return {prompt:`<div class="col"><span class="emo">${emo}</span><span class="zy">${zyHTML(zy.replace(/˙\S+$/, '？'))}</span></div>`, bubble:'第二個字是第幾聲？',
+    speak:[w, '第二個字是第幾聲呢？'], after:[w, '第二個字是輕聲'],
+    opts:shuffle([5, t1, ...wrong]).map(toneOpt), ans:5, key:'tone5'};
+}
+function pinPool(lv){ const out = []; for (const k of ['p1', 'p2', 'p3']) { out.push(...PIN[k]); if (k === lv.bank) break; } return out; }
+function qPin(p, type, pool){
+  const [a, b, ch] = p, ans = a + b;
+  // 錯的選項優先找「同聲母」或「同韻母」的，比較有練習效果
+  let cand = [...new Set(pool.map(x => x[0] + x[1]))].filter(x => x !== ans);
+  const near = cand.filter(x => x[0] === a || x[1] === b);
+  const wrong = sample(near.length >= 2 ? near : cand, 2);
+  if (type === 'join') return {prompt:`<div class="plus" style="font-size:3.6rem">${a}<i>＋</i>${b}<i>＝</i>？</div>`, bubble:'拼起來是哪一個？',
+    speak:[SYM[a].say, SYM[b].say, '拼起來是什麼呢？'], after:[SYM[a].say, SYM[b].say, ch],
+    opts:shuffle([ans, ...wrong]).map(x => ({v:x, html:`<span class="zy" style="font-size:2.4rem">${x}</span>`})), ans, key:'pin'};
+  return {prompt:`<button class="say" onclick="replay()" style="width:6rem;height:6rem;font-size:3rem">🔊</button>`, bubble:'聽聽看，是哪一個？',
+    speak:[ch, ch, '是哪一個呢？'], after:[SYM[a].say, SYM[b].say, ch],
+    opts:shuffle([ans, ...wrong]).map(x => ({v:x, html:`<span class="zy" style="font-size:2.4rem">${x}</span>`})), ans, key:'pin'};
+}
+function qWord(w, type, bank){
+  const [word, emo, zy] = w;
+  const same = bank.filter(x => x[0] !== word && x[2] !== zy && x[1] !== emo);
+  const wrong = sample(same, 2);
+  if (type === 'read') return {prompt:`<span class="emo">${emo}</span>`, bubble:'這個怎麼拼？',
+    speak:[word, '是哪一個呢？'], after:[word],
+    opts:shuffle([w, ...wrong]).map(x => ({v:x[0], html:`<span class="zy" style="font-size:${x[2].length > 6 ? 1.35 : 1.75}rem">${zyHTML(x[2])}</span>`})), ans:word, key:'word'};
+  return {prompt:`<span class="zy" style="font-size:3rem">${zyHTML(zy)}</span>`, bubble:'讀讀看，是哪一個？',
+    speak:['讀讀看，是哪一個呢？'], after:[word],
+    opts:shuffle([w, ...wrong]).map(x => ({v:x[0], html:`<span class="emo">${x[1]}</span>`})), ans:word, key:'word'};
+}
+function genQuiz(i, cards){
+  const lv = LEVELS[i];
+  if (lv.sec === 'sym') {
+    const pool = learnedSyms(i), list = [];
+    lv.items.forEach(s => sample(['hear', 'pic', 'sym'], 2).forEach(t => list.push(qSym(s, t, pool))));
+    return shuffle(list);
+  }
+  if (lv.id === 't1') return shuffle([1, 2, 3, 4, 1, 2, 3, 4].map(t => qTone(t, [1, 2, 3, 4])));
+  if (lv.id === 't2') return shuffle([qLight(), qLight(), qLight(), qLight(), ...[1, 2, 3, 4].map(t => qTone(t, [1, 2, 3, 4, 5]))]);
+  const items = (cards || learnItems(lv));
+  if (lv.sec === 'pin') { const pool = pinPool(lv); return shuffle(items.flatMap(c => ['join', 'hear'].map(t => qPin(c.p, t, pool)))).slice(0, 8); }
+  const bank = WORDS[lv.bank];
+  return shuffle(items.flatMap(c => ['read', 'pic'].map(t => qWord(c.w, t, bank)))).slice(0, 8);
+}
+
+// ---------- 作答 ----------
+function startQuiz(i, cards){
+  screen = 'quiz';
+  Q = {i, lv:LEVELS[i], list:genQuiz(i, cards), k:0, earned:0, wrong:false, lock:false, token:Math.random(), stickers:0};
+  drawQ();
+}
+function drawQ(mood){
+  const q = Q.list[Q.k];
+  view(topbar() + `<div class="quiz">
+    <div class="paws">${Q.list.map((_, j) => `<i class="${j < Q.k ? 'on' : ''}">🐾</i>`).join('')}</div>
+    <div class="ask" onclick="replay()">${catSVG(mood || 'normal')}<div class="bubble" id="qb">${q.bubble}</div></div>
+    <div class="panel prompt">${q.prompt}</div>
+    <div class="opts">${q.opts.map((o, j) => `<button class="opt" data-j="${j}" onclick="answer(${j})">${o.html}</button>`).join('')}</div>
+    ${q.prompt.includes('replay()') ? '' : `<div class="row"><button class="say" onclick="replay()" aria-label="再聽一次">🔊</button></div>`}
+  </div>`);
+  speak(q.speak);
+}
+function replay(){ if (Q) { audioInit(); speak(Q.list[Q.k].speak); } }
+function setCat(mood, text){
+  const c = document.querySelector('.ask .cat'); if (c) c.outerHTML = catSVG(mood);
+  const b = $('#qb'); if (b && text) b.textContent = text;
+}
+async function answer(j){
+  if (!Q || Q.lock) return;
+  audioInit();
+  const q = Q.list[Q.k], o = q.opts[j], btn = document.querySelector(`.opt[data-j="${j}"]`);
+  if (o.v === q.ans) {
+    Q.lock = true; btn.classList.add('ok'); sfx('ok'); setCat('happy', pick(PRAISE));
+    stat(q.key, Q.wrong ? undefined : true);
+    if (!Q.wrong) { Q.earned++; addStar(btn); }
+    const tk = Q.token;
+    await speak(q.after);
+    await new Promise(r => setTimeout(r, 350));
+    if (!Q || Q.token !== tk) return;
+    Q.k++; Q.wrong = false; Q.lock = false;
+    if (Q.k >= Q.list.length) finish(); else drawQ();
+  } else {
+    btn.classList.add('no'); sfx('no'); setCat('think', pick(SORRY));
+    if (!Q.wrong) stat(q.key, false);
+    Q.wrong = true;
+    setTimeout(() => { if (Q && Q.list[Q.k] === q) speak(q.speak); }, 700);
+  }
+}
+function addStar(from){
+  const before = Math.floor(S.stars / 10);
+  S.stars++; save();
+  if (Math.floor(S.stars / 10) > before && before < STICKERS.length) Q.stickers++;
+  const r = from.getBoundingClientRect(), tgt = $('#starN'), tr = tgt ? tgt.getBoundingClientRect() : {left:20, top:10};
+  const st = document.createElement('div'); st.className = 'flystar'; st.textContent = '⭐';
+  st.style.left = r.left + r.width / 2 - 20 + 'px'; st.style.top = r.top + 'px';
+  document.body.appendChild(st);
+  requestAnimationFrame(() => requestAnimationFrame(() => { st.style.left = tr.left + 'px'; st.style.top = tr.top + 'px'; st.style.transform = 'scale(.5)'; st.style.opacity = '.6'; }));
+  setTimeout(() => { st.remove(); const n = $('#starN'); if (n) n.textContent = S.stars; }, 850);
+}
+function finish(){
+  const lv = Q.lv, i = Q.i, earned = Q.earned, total = Q.list.length, newStk = Q.stickers;
+  const first = !S.done[lv.id]; S.done[lv.id] = true; save();
+  screen = 'result'; Q = null;
+  const next = i + 1 < LEVELS.length ? i + 1 : -1;
+  view(topbar() + `<div class="result">${catSVG('happy').replace('class="cat', 'class="cat big')}
+    <h1>過關了！</h1>
+    <div class="stars">${'⭐'.repeat(earned)}<span style="opacity:.25">${'⭐'.repeat(total - earned)}</span></div>
+    <p style="font-size:1.2rem;font-weight:700;margin:0">拿到 ${earned} 顆星星　${first && next >= 0 ? '・ 下一關打開了！' : ''}</p>
+    <div class="row">
+      <button class="btn ghost" onclick="tapGo(()=>learn(${i}))">🔁 再玩一次</button>
+      ${next >= 0 ? `<button class="btn" onclick="tapGo(()=>learn(${next}))">下一關 ▶</button>` : `<button class="btn" onclick="tapGo(home)">全部完成 👑</button>`}
+    </div></div>`);
+  sfx('win'); hearts(); speak(pick(PASS_LINES));
+  if (newStk) setTimeout(() => stickerPop(Math.min(STICKERS.length, Math.floor(S.stars / 10)) - 1), 1300);
+}
+function hearts(){
+  for (let k = 0; k < 18; k++) { const h = document.createElement('div'); h.className = 'heart'; h.textContent = pick(['💖', '🌸', '⭐', '🎀']); h.style.left = rnd(100) + 'vw'; h.style.animationDuration = 2 + Math.random() * 2 + 's'; h.style.animationDelay = Math.random() * .8 + 's'; document.body.appendChild(h); setTimeout(() => h.remove(), 5000); }
+}
+function stickerPop(idx){
+  const d = document.createElement('div'); d.className = 'mask';
+  d.innerHTML = `<div class="pop"><h2>🎉 得到新貼紙！</h2><div class="newstk">${STICKERS[idx]}</div><p style="font-weight:700">已經貼到貼紙簿了</p><div class="row"><button class="btn ghost" id="sb">看貼紙簿</button><button class="btn" id="sk">好耶！</button></div></div>`;
+  document.body.appendChild(d); sfx('sticker'); speak('哇！得到新貼紙！');
+  d.querySelector('#sk').onclick = () => { d.remove(); sfx('tap'); };
+  d.querySelector('#sb').onclick = () => { d.remove(); tapGo(book); };
+}
+
+// ---------- 貼紙簿 ----------
+function book(){
+  screen = 'book';
+  const have = Math.min(STICKERS.length, Math.floor(S.stars / 10)), toNext = S.stars % 10;
+  view(topbar() + `<div class="panel"><h2>📒 我的貼紙簿</h2>
+    <p style="margin:.2rem 0 .4rem;font-weight:700">⭐ 共 ${S.stars} 顆星星　・ 貼紙 ${have} / ${STICKERS.length} 張</p>
+    ${have < STICKERS.length ? `<p style="margin:.2rem 0;font-weight:700">再拿 ${10 - toNext} 顆星星換下一張貼紙！</p><div class="bar"><i style="width:${toNext * 10}%"></i></div>` : '<p>全部貼紙都收集到了！👑</p>'}
+    </div><div style="height:.8rem"></div>
+    <div class="book">${STICKERS.map((s, k) => k < have ? `<div class="stk" onclick="sfx('tap')">${s}</div>` : `<div class="stk no">?</div>`).join('')}</div>`);
+}
+
+// ---------- 家長鎖 ----------
+let gate = null;
+function parentGate(after){
+  screen = 'gate';
+  const a = 6 + rnd(4), b = 6 + rnd(4);
+  gate = {ans:String(a * b), typed:'', after:typeof after === 'function' ? after : parentPage};
+  const d = document.createElement('div'); d.className = 'mask'; d.id = 'gate';
+  d.innerHTML = `<div class="pop"><h2>👩‍👧 家長專區</h2><p style="margin:.2rem 0">請大人回答：</p>
+    <div style="font-size:2.2rem;font-weight:800">${a} × ${b} = ？</div><div class="ans" id="ga"></div>
+    <div class="pad">${[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map(x => `<button onclick="gateKey('${x}')">${x}</button>`).join('')}</div>
+    <div style="margin-top:.8rem"><button class="btn ghost small" onclick="gateClose()">取消</button></div></div>`;
+  document.body.appendChild(d);
+}
+function gateClose(){ const g = $('#gate'); if (g) g.remove(); if (screen === 'gate') { if (resting) restScreen(); else home(); } }
+function gateKey(x){
+  sfx('tap');
+  if (x === '⌫') gate.typed = gate.typed.slice(0, -1);
+  else if (x === '✓') {
+    if (gate.typed === gate.ans) { const fn = gate.after; $('#gate').remove(); fn(); return; }
+    gate.typed = ''; $('#ga').textContent = '不對喔'; sfx('no'); return;
+  } else if (gate.typed.length < 3) gate.typed += x;
+  $('#ga').textContent = gate.typed;
+}
+
+// ---------- 家長頁 ----------
+function level(k){ const r = S.st[k]; if (!r || !r.n) return 0; return r.c >= 3 && r.c / r.n >= 0.7 ? 2 : 1; }
+const isBad = k => { const r = S.st[k]; return r && r.w >= 3 && r.w / r.n > 0.4; };
+function parentPage(){
+  screen = 'parent';
+  const mins = Math.floor(S.day.sec / 60), doneN = LEVELS.filter(l => S.done[l.id]).length;
+  const syms = Object.keys(SYM), bad = syms.filter(isBad);
+  const tlv = [1, 2, 3, 4, 5].map(t => `<span class="sg l${level('tone' + t)} ${isBad('tone' + t) ? 'bad' : ''}" style="font-size:1rem;padding:.4rem .6rem">${TONES[t].name}</span>`).join('');
+  view(`<div class="top"><button class="ib" onclick="tapGo(home)">🏠</button><span class="sp"></span><b style="font-size:1.2rem">家長專區</b><span class="sp"></span></div>
+  <div class="parent">
+    <div class="panel"><h2>📊 學習進度</h2>
+      <p>完成關卡：<b>${doneN} / ${LEVELS.length}</b>　・ 星星：<b>${S.stars}</b>　・ 貼紙：<b>${Math.min(STICKERS.length, Math.floor(S.stars / 10))}</b></p>
+      <p><b>37 個注音符號</b></p>
+      <div class="sgrid">${syms.map(s => `<span class="sg l${level(s)} ${isBad(s) ? 'bad' : ''}">${s}</span>`).join('')}</div>
+      <p style="margin-top:.6rem"><b>聲調</b></p><div class="chips">${tlv}</div>
+      <div class="legend"><span style="--c:#eee">還沒練習</span><span style="--c:#fff2c9">練習中</span><span style="--c:#d8f6e5">學會了</span><span style="--c:#ff5a5a">常錯</span></div>
+      ${bad.length ? `<p style="margin-top:.6rem">常錯的符號：<b style="font-size:1.3rem;color:var(--deep)">${bad.join('　')}</b><br><small>可以陪她回到這些關卡多玩幾次。</small></p>` : ''}
+      <p><small>「學會了」＝第一次就答對 3 次以上、正確率七成以上。</small></p>
+    </div>
+    <div class="panel"><h2>⏰ 每天遊戲時間</h2>
+      <p>今天已經玩了 <b>${mins}</b> 分鐘</p>
+      <div class="chips">${[10, 15, 20, 30, 0].map(m => `<button class="chip ${S.limit === m ? 'on' : ''}" onclick="setLimit(${m})">${m ? m + ' 分鐘' : '不限制'}</button>`).join('')}</div>
+      <p><small>時間到了小貓會提醒休息，要大人解鎖才能再玩 10 分鐘。每天自動重新計算。</small></p>
+    </div>
+    <div class="panel"><h2>🔊 聲音</h2>
+      ${[['sfx', '答對／答錯音效'], ['bgm', '輕柔背景音樂'], ['voice', '語音唸題目（建議開著）']].map(([k, n]) => `<div class="sw"><span>${n}</span><button class="tg ${S[k] ? 'on' : ''}" onclick="ptoggle('${k}')"></button></div>`).join('')}
+      <p><small>${window.VOICE_MAP ? '使用預先做好的 AI 真人語音（不需要網路）。' : VOICE ? '目前使用的語音：' + VOICE.name :'⚠️ 這台裝置找不到中文語音。iPhone／iPad：設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文（台灣）；Android：設定 → 文字轉語音 → 下載中文語音。'}</small></p>
+      <div class="row" style="justify-content:flex-start"><button class="btn ghost small" onclick="speak('玻，冰淇淋的玻')">試聽語音</button></div>
+    </div>
+    <div class="panel"><h2>🔓 關卡</h2>
+      <div class="sw"><span>全部關卡直接開放（不用照順序）</span><button class="tg ${S.openAll ? 'on' : ''}" onclick="ptoggle('openAll')"></button></div>
+    </div>
+    <div class="panel"><h2>📲 裝到手機／平板</h2><div id="install"></div><p><small>裝好後沒有網路也能玩。所有進度只存在這台裝置，不需要帳號、不收集資料、沒有廣告。</small></p></div>
+    <div class="panel"><h2>🗑️ 重新開始</h2><button class="btn ghost small" onclick="resetAll()">清除全部進度</button></div>
+  </div>`);
+  renderInstall(true);
+}
+function setLimit(m){ S.limit = m; save(); parentPage(); }
+function ptoggle(k){ S[k] = !S[k]; save(); bgmUpdate(); parentPage(); }
+function resetAll(){
+  if (!confirm('確定要清除全部進度嗎？星星、貼紙和關卡都會歸零，無法復原。')) return;
+  const keep = {sfx:S.sfx, bgm:S.bgm, voice:S.voice, limit:S.limit, noIOS:S.noIOS};
+  S = Object.assign(defaults(), keep); save(); home();
+}
+
+// ---------- 每日時間提醒 ----------
+function tick(){
+  if (S.day.d !== today()) { S.day = {d:today(), sec:0, bonus:0}; }
+  if (screen === 'splash' || resting || document.hidden || screen === 'parent' || screen === 'gate') return;
+  S.day.sec++;
+  if (S.day.sec % 15 === 0) save();
+  if (S.limit && S.day.sec >= S.limit * 60 + S.day.bonus) { resting = true; save(); restScreen(); }
+}
+function restScreen(){
+  screen = 'rest'; Q = null; bgmUpdate();
+  stopVoice();
+  view(`<div class="result">${catSVG('sleep').replace('class="cat', 'class="cat big')}
+    <h1>休息一下吧 😴</h1>
+    <p style="font-size:1.3rem;font-weight:700;margin:0">今天玩好久了，<br>咪咪想睡覺了，眼睛也要休息喔！</p>
+    <p style="font-weight:700;color:var(--mute)">明天再一起玩吧 🌙</p>
+    <button class="btn ghost small" onclick="parentGate(extend)">大人解鎖</button></div>`);
+  setTimeout(() => speak(REST_LINE), 300);
+}
+function extend(){ S.day.bonus = S.day.sec - S.limit * 60 + 600; resting = false; save(); bgmUpdate(); home(); }
+
+// ---------- 安裝引導（同英文冒險島做法）----------
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; renderInstall(); });
+const UA = navigator.userAgent;
+const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+const isIOS = () => /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
+const isIPad = () => /iPad/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
+const inApp = () => /Line\/|FBAN|FBAV|Instagram/i.test(UA);
+function renderInstall(inParent){
+  const box = $('#install'); if (!box) return;
+  if (isStandalone()) { box.innerHTML = inParent ? '<p>✅ 已經裝到主畫面了</p>' : ''; return; }
+  if (inApp()) { box.innerHTML = `<p style="font-weight:700">📲 你現在在 LINE／Facebook 裡面，請點右上角選單，選「用預設瀏覽器開啟」（iPhone 用 Safari、Android 用 Chrome）再安裝。</p>`; return; }
+  if (deferredPrompt) { box.innerHTML = `<button class="btn ghost small" id="ins">📲 裝到手機</button>`; $('#ins').onclick = async () => { deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; box.innerHTML = ''; }; return; }
+  if (isIOS()) {
+    box.innerHTML = `<button class="btn ghost small" onclick="iosGuide()">📲 加到主畫面</button>`;
+    if (!inParent && !S.noIOS) { let shown = false; try { shown = !!sessionStorage.getItem('iosShown'); sessionStorage.setItem('iosShown', '1'); } catch(e) {} if (!shown) setTimeout(iosGuide, 1200); }
+    return;
+  }
+  box.innerHTML = inParent ? '<p><small>用手機或平板的瀏覽器打開這個網址，就可以加到主畫面。</small></p>' : '';
+}
+function iosGuide(){
+  const m = UA.match(/Version\/(\d+)/), v = m ? +m[1] : 0, ipad = isIPad(), new26 = v >= 26;
+  const step1 = ipad ? '點右上角的「分享」按鈕 ⬆️' : (new26 ? '點右下角的「⋯」，再點「分享」⬆️' : '點下方中間的「分享」按鈕 ⬆️');
+  const arrow = ipad ? 'tr' : (new26 ? 'br' : 'bc');
+  const d = document.createElement('div'); d.className = 'mask';
+  d.innerHTML = `<div class="pop" style="text-align:left"><h2>📲 3 步驟裝到主畫面</h2><ol style="line-height:1.9;font-weight:700;padding-left:1.4rem"><li>${step1}</li><li>往下滑，點「加入主畫面」➕</li><li>右上角點「加入」，完成！</li></ol><p><small>蘋果規定 iPhone／iPad 不能一鍵安裝，要用 Safari 手動加入。</small></p><div class="row"><button class="btn ghost small" id="nomore">不要再提醒</button><button class="btn small" id="okg">知道了</button></div></div><div class="finger ${arrow}">👇</div>`;
+  document.body.appendChild(d);
+  d.querySelector('#okg').onclick = () => d.remove();
+  d.querySelector('#nomore').onclick = () => { S.noIOS = true; save(); d.remove(); };
+}
+
+// ---------- 啟動 ----------
+document.addEventListener('visibilitychange', () => { if (!AC) return; if (document.hidden) { stopVoice(); AC.suspend(); } else AC.resume(); bgmUpdate(); });
+load(); initVoice();
+if (S.limit && S.day.sec >= S.limit * 60 + S.day.bonus) { resting = true; restScreen(); } else splash();
+setInterval(tick, 1000);
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+// 測試用
+window.__T = {LEVELS, SYM, genQuiz, learnItems, cardSpeak, BOPO, STICKERS, allPhrases};
+</script>
+</body>
+</html>

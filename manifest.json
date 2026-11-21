@@ -1,0 +1,16 @@
+{
+  "name": "粉紅注音小屋",
+  "short_name": "注音小屋",
+  "description": "學齡前的注音小遊戲：認識ㄅㄆㄇ、聲調、拼音和看圖讀讀看",
+  "lang": "zh-Hant-TW",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffe3ec",
+  "theme_color": "#ffb3cc",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
